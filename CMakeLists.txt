@@ -4,7 +4,7 @@ project(rex VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SDL2_DIR "C:/sdl2/x86_64-w64-mingw32")
+set(SDL2_DIR "C:/SDL2/")
 include_directories(${SDL2_DIR}/include)
 link_directories(${SDL2_DIR}/lib)
 

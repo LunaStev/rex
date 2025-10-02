@@ -1,10 +1,7 @@
 #include "Engine.h"
 
 Engine::Engine() : window(nullptr), renderer(nullptr), isRunning(false) {}
-
-Engine::~Engine() {
-    quit();
-}
+Engine::~Engine() { quit(); }
 
 bool Engine::init(const char* title, int width, int height) {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
@@ -14,7 +11,6 @@ bool Engine::init(const char* title, int width, int height) {
 
     window = SDL_CreateWindow(title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                               width, height, SDL_WINDOW_SHOWN);
-
     if (!window) {
         std::cerr << "Window Error: " << SDL_GetError() << std::endl;
         return false;
@@ -22,44 +18,33 @@ bool Engine::init(const char* title, int width, int height) {
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
-        std::cerr << "Rednerer Error: " << SDL_GetError() << std::endl;
+        std::cerr << "Renderer Error: " << SDL_GetError() << std::endl;
         return false;
     }
 
+    graphics.setRenderer(renderer);
     isRunning = true;
     return true;
 }
 
-void Engine::run() {
-    SDL_Event e;
-    int x = 100, y = 100;
+void Engine::mainLoop(Game& game) {
+    Uint32 lastTick = SDL_GetTicks();
 
     while (isRunning) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                isRunning = false;
-            }
-            if (e.type == SDL_KEYDOWN) {
-                if (e.key.keysym.sym == SDLK_ESCAPE) {
-                    isRunning = false;
-                }
-            }
-        }
+        input.update(isRunning);
 
-        const Uint8* state = SDL_GetKeyboardState(NULL);
-        if (state[SDL_SCANCODE_RIGHT]) x += 2;
-        if (state[SDL_SCANCODE_LEFT]) x -= 2;
-        if (state[SDL_SCANCODE_DOWN]) y += 2;
-        if (state[SDL_SCANCODE_UP]) y -= 2;
+        // 델타 타임 계산
+        Uint32 currentTick = SDL_GetTicks();
+        float dt = (currentTick - lastTick) / 1000.0f;
+        lastTick = currentTick;
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
+        // 게임 로직
+        game.update(dt, input);
 
-        SDL_Rect rect = {x, y, 50, 50};
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-        SDL_RenderFillRect(renderer, &rect);
-
-        SDL_RenderPresent(renderer);
+        // 렌더링
+        graphics.clear(0, 0, 0, 255);
+        game.render(graphics);
+        graphics.present();
 
         SDL_Delay(16); // ~60FPS
     }

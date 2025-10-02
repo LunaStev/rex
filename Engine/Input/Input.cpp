@@ -6,7 +6,7 @@ void Input::update(bool& isRunning) {
         if (e.type == SDL_QUIT) {
             isRunning = false;
         }
-        if (e.type = SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) {
+        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) {
             isRunning = false;
         }
     }
