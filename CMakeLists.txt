@@ -4,27 +4,68 @@ project(rex VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(SDL2_DIR "C:/SDL2/")
-include_directories(${SDL2_DIR}/include)
-link_directories(${SDL2_DIR}/lib)
-
-file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
-    Engine/*.cpp
-)
-
-file(GLOB_RECURSE EXAMPLE_SOURCES CONFIGURE_DEPENDS
-    Examples/*.cpp
-)
-
-# --- 엔진 라이브러리 ---
-add_library(rex_engine ${ENGINE_SOURCES})
-
-# SDL2 라이브러리 링크
 if(WIN32)
-    target_link_libraries(rex_engine SDL2 SDL2main)
+    if(NOT DEFINED SDL2_DIR)
+        set(SDL2_DIR "C:/SDL2")
+    endif()
+    include_directories(${SDL2_DIR}/include)
+    link_directories(${SDL2_DIR}/lib)
 else()
-    target_link_libraries(rex_engine SDL2)
+    find_package(SDL2 REQUIRED)
+    if(SDL2_FOUND)
+        include_directories(${SDL2_INCLUDE_DIRS})
+    else()
+        find_package(PkgConfig REQUIRED)
+        pkg_search_module(SDL2 REQUIRED sdl2)
+        include_directories(${SDL2_INCLUDE_DIRS})
+    endif()
 endif()
 
-add_executable(rex_example ${EXAMPLE_SOURCES})
-target_link_libraries(rex_example rex_engine)
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS Engine/*.cpp)
+file(GLOB_RECURSE EXAMPLE_SOURCES CONFIGURE_DEPENDS Examples/*.cpp)
+
+add_library(rex_engine ${ENGINE_SOURCES})
+
+if(WIN32)
+    target_link_libraries(rex_engine SDL2 SDL2main)
+elseif(APPLE)
+    find_library(SDL2_LIB SDL2)
+    target_link_libraries(rex_engine ${SDL2_LIB})
+else()
+    target_link_libraries(rex_engine ${SDL2_LIBRARIES})
+endif()
+
+foreach(example_source ${EXAMPLE_SOURCES})
+    get_filename_component(example_name ${example_source} NAME_WE)
+
+    set(target_name "rex_${example_name}")
+
+    add_executable(${target_name} ${example_source})
+    target_link_libraries(${target_name} rex_engine)
+
+    if(APPLE)
+        target_link_libraries(${target_name} "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+    endif()
+
+    message(STATUS "Added example target: ${target_name}")
+endforeach()
+
+if(APPLE)
+    target_link_libraries(rex_example "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if(EXISTS "/proc/version")
+        file(READ "/proc/version" PROC_VERSION)
+        if(PROC_VERSION MATCHES "Microsoft")
+            message(STATUS "Detected WSL environment ✅")
+            execute_process(COMMAND bash -c "which sdl2-config" RESULT_VARIABLE SDL2_RESULT)
+            if(NOT SDL2_RESULT EQUAL 0)
+                message(WARNING "SDL2 not found. Install with: sudo apt install libsdl2-dev")
+            endif()
+        endif()
+    endif()
+endif()
+
+message(STATUS "Building project '${PROJECT_NAME}' (${PROJECT_VERSION}) on ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Using C++${CMAKE_CXX_STANDARD} with ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
