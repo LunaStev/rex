@@ -66,20 +66,20 @@ public:
     void update(float dt, Input& input) override {
         switch (state) {
             case GameState::MAIN_MENU:
-                if (input.isKeyHeld(SDL_SCANCODE_RETURN)) {
+                if (input.isKeyHeld(RexKey::ENTER)) {
                     state = GameState::IN_GAME;
                 }
                 break;
 
             case GameState::IN_GAME:
                 updateWorld(dt, input);
-                if (input.isKeyHeld(SDL_SCANCODE_I)) {
+                if (input.isKeyHeld(RexKey::I)) {
                     state = GameState::INVENTORY;
                 }
                 break;
 
             case GameState::INVENTORY:
-                if (input.isKeyHeld(SDL_SCANCODE_ESCAPE) || input.isKeyHeld(SDL_SCANCODE_I)) {
+                if (input.isKeyHeld(RexKey::ESCAPE) || input.isKeyHeld(RexKey::I)) {
                     state = GameState::IN_GAME;
                 }
                 break;
@@ -87,10 +87,10 @@ public:
     }
 
     void updateWorld(float dt, Input& input) {
-        if (input.isKeyHeld(SDL_SCANCODE_A)) playerX -= moveSpeed * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_D)) playerX += moveSpeed * dt;
+        if (input.isKeyHeld(RexKey::A)) playerX -= moveSpeed * dt;
+        if (input.isKeyHeld(RexKey::D)) playerX += moveSpeed * dt;
 
-        if (isGrounded && input.isKeyHeld(SDL_SCANCODE_SPACE)) {
+        if (isGrounded && input.isKeyHeld(RexKey::SPACE)) {
             velocityY = -500;
             isGrounded = false;
         }

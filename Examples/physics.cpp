@@ -18,11 +18,11 @@ public:
     }
 
     void update(float dt, Input& input) override {
-        if (input.isKeyHeld(SDL_SCANCODE_A)) player.setVX(-250);
-        else if (input.isKeyHeld(SDL_SCANCODE_D)) player.setVX(250);
+        if (input.isKeyHeld(RexKey::A)) player.setVX(-250);
+        else if (input.isKeyHeld(RexKey::D)) player.setVX(250);
         else player.setVX(0);
 
-        if (grounded && input.isKeyHeld(SDL_SCANCODE_SPACE)) {
+        if (grounded && input.isKeyHeld(RexKey::SPACE)) {
             player.setVY(-500);
             grounded = false;
         }

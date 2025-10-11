@@ -14,10 +14,10 @@ public:
     }
 
     void update(float dt, Input& input) override {
-        if (input.isKeyHeld(SDL_SCANCODE_SPACE)) {
+        if (input.isKeyHeld(RexKey::SPACE)) {
             audio.playSound("jump");
         }
-        if (input.isKeyHeld(SDL_SCANCODE_M)) {
+        if (input.isKeyHeld(RexKey::M)) {
             if (!musicPlaying) {
                 audio.playMusic();
                 musicPlaying = true;

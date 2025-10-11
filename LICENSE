@@ -12,12 +12,12 @@ furnished to do so, subject to the following conditions:
    all copies or substantial portions of the Software.
 
 2. Games, applications, or other works created using the Rex Framework
-   (including works that link to or depend on it) are **not** considered
-   derivative works of the Rex Framework and are **not** subject to this license.
+   (including works that link to or depend on it) are not considered
+   derivative works of the Rex Framework and are not subject to this license.
    Developers are free to license, distribute, and sell such works under any terms.
 
 3. Modifications of the Rex Framework that result in derivative frameworks,
-   engines, or tools **must be released under the same license terms**
+   engines, or tools must be released under the same license terms
    as the original Rex Framework. This ensures that all future versions
    of Rex-derived engines remain open and accessible to the community.
 

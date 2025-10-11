@@ -13,14 +13,14 @@ public:
 
     void update(float dt, Input& input) override {
         float speed = 300 * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_RIGHT)) box.setPosition(box.getX() + speed, box.getY());
-        if (input.isKeyHeld(SDL_SCANCODE_LEFT))  box.setPosition(box.getX() - speed, box.getY());
-        if (input.isKeyHeld(SDL_SCANCODE_UP))    box.setPosition(box.getX(), box.getY() - speed);
-        if (input.isKeyHeld(SDL_SCANCODE_DOWN))  box.setPosition(box.getX(), box.getY() + speed);
+        if (input.isKeyHeld(RexKey::RIGHT)) box.setPosition(box.getX() + speed, box.getY());
+        if (input.isKeyHeld(RexKey::LEFT))  box.setPosition(box.getX() - speed, box.getY());
+        if (input.isKeyHeld(RexKey::UP))    box.setPosition(box.getX(), box.getY() - speed);
+        if (input.isKeyHeld(RexKey::DOWN))  box.setPosition(box.getX(), box.getY() + speed);
 
-        if (input.isKeyHeld(SDL_SCANCODE_R)) box.setColor(255, 0, 0);
-        if (input.isKeyHeld(SDL_SCANCODE_G)) box.setColor(0, 255, 0);
-        if (input.isKeyHeld(SDL_SCANCODE_B)) box.setColor(0, 0, 255);
+        if (input.isKeyHeld(RexKey::R)) box.setColor(255, 0, 0);
+        if (input.isKeyHeld(RexKey::G)) box.setColor(0, 255, 0);
+        if (input.isKeyHeld(RexKey::B)) box.setColor(0, 0, 255);
     }
 
     void render(Graphics& g) override {

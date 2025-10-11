@@ -56,8 +56,8 @@ public:
     }
 
     void update(float dt, Input& input) override {
-        if (input.isKeyHeld(SDL_SCANCODE_LEFT)) paddleX -= paddleSpeed * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_RIGHT)) paddleX += paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::LEFT)) paddleX -= paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::RIGHT)) paddleX += paddleSpeed * dt;
 
         if (paddleX < 0) paddleX = 0;
         if (paddleX + 100 > 800) paddleX = 700;

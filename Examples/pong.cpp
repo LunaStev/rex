@@ -15,11 +15,11 @@ class PongGame : public Game {
 
 public:
     void update(float dt, Input& input) override {
-        if (input.isKeyHeld(SDL_SCANCODE_W)) leftY -= paddleSpeed * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_S)) leftY += paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::W)) leftY -= paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::S)) leftY += paddleSpeed * dt;
 
-        if (input.isKeyHeld(SDL_SCANCODE_UP)) rightY -= paddleSpeed * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_DOWN)) rightY += paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::UP)) rightY -= paddleSpeed * dt;
+        if (input.isKeyHeld(RexKey::DOWN)) rightY += paddleSpeed * dt;
 
         ballX += ballDX * ballSpeed * dt;
         ballY += ballDY * ballSpeed * dt;

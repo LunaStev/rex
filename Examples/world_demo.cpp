@@ -35,10 +35,10 @@ public:
     }
 
     void update(float dt, Input& input) override {
-        if (input.isKeyHeld(SDL_SCANCODE_A)) playerX -= moveSpeed * dt;
-        if (input.isKeyHeld(SDL_SCANCODE_D)) playerX += moveSpeed * dt;
+        if (input.isKeyHeld(RexKey::A)) playerX -= moveSpeed * dt;
+        if (input.isKeyHeld(RexKey::D)) playerX += moveSpeed * dt;
 
-        if (isGrounded && input.isKeyHeld(SDL_SCANCODE_SPACE)) {
+        if (isGrounded && input.isKeyHeld(RexKey::SPACE)) {
             velocityY = -500;
             isGrounded = false;
         }
