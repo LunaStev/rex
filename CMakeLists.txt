@@ -60,6 +60,9 @@ else()
         pkg_search_module(SDL2_TTF REQUIRED SDL2_ttf)
         include_directories(${SDL2_TTF_INCLUDE_DIRS})
     endif()
+
+    include_directories(/opt/homebrew/include /opt/homebrew/include/SDL2)
+    link_directories(/opt/homebrew/lib)
 endif()
 
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS Engine/*.cpp)
@@ -72,6 +75,7 @@ if(WIN32)
 elseif(APPLE)
     find_library(SDL2_LIB SDL2)
     find_library(SDL2_MIXER_LIB SDL2_mixer)
+    find_library(SDL2_TTF_LIB SDL2_ttf)
     target_link_libraries(rex_engine ${SDL2_LIB} ${SDL2_MIXER_LIB} ${SDL2_TTF_LIB})
 else()
     target_link_libraries(rex_engine
