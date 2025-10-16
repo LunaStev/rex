@@ -66,7 +66,7 @@ public:
     void update(float dt, Input& input) override {
         switch (state) {
             case GameState::MAIN_MENU:
-                if (input.isKeyHeld(RexKey::ENTER)) {
+                if (input.isKeyHeld(RexKey::RETURN)) {
                     state = GameState::IN_GAME;
                 }
                 break;
