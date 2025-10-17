@@ -18,7 +18,7 @@ public:
         if (!engine.init(title, width, height)) {
             return;
         }
-        T game; // 사용자가 만든 게임 클래스
+        T game;
         engine.mainLoop(game);
     }
 

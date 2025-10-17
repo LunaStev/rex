@@ -33,15 +33,12 @@ void Engine::mainLoop(Game& game) {
     while (isRunning) {
         input.update(isRunning);
 
-        // 델타 타임 계산
         Uint32 currentTick = SDL_GetTicks();
         float dt = (currentTick - lastTick) / 1000.0f;
         lastTick = currentTick;
 
-        // 게임 로직
         game.update(dt, input);
 
-        // 렌더링
         graphics.clear(0, 0, 0, 255);
         game.render(graphics);
         graphics.present();
