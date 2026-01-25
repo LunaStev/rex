@@ -27,10 +27,30 @@ void World::render(Graphics& g) {
 }
 
 float World::getGroundY(float x, float yBottom) {
+    (void)yBottom;
+
     int tx = (int)(x / TILE_SIZE);
+    if (tx < 0) tx = 0;
+    if (tx >= width) tx = width - 1;
+
     for (int y = 0; y < height; y++) {
         Tile& t = tiles[y * width + tx];
         if (t.type != 0) return y * TILE_SIZE;
     }
     return height * TILE_SIZE;
 }
+
+int World::getTile(int tx, int ty) const {
+    if (tx < 0 || ty < 0 || tx >= width || ty >= height) return 1;
+    return tiles[ty * width + tx].type;
+}
+
+void World::setTile(int tx, int ty, int type) {
+    if (tx < 0 || ty < 0 || tx >= width || ty >= height) return;
+    tiles[ty * width + tx].type = type;
+}
+
+bool World::isSolid(int tx, int ty) const {
+    return getTile(tx, ty) != 0;
+}
+

@@ -9,12 +9,14 @@ protected:
     float vx, vy;        // Speed
     float width, height; // Size
     bool alive;          // Active status
+    bool onGround;        // Is on ground
     Uint8 r, g, b, a;    // Color (Temporary)
 
 public:
     Entity(float x=0, float y=0, float w=40, float h=40)
         : x(x), y(y), vx(0), vy(0), width(w), height(h),
-          alive(true), r(255), g(255), b(255), a(255) {}
+          alive(true), onGround(false), 
+          r(255), g(255), b(255), a(255) {}
 
     virtual ~Entity() = default;
 
@@ -43,4 +45,7 @@ public:
     // --- A state of life ---
     inline bool isAlive() const { return alive; }
     inline void kill() { alive = false; }
+
+    inline bool isOnGround() const { return onGround; }
+    inline void setOnGround(bool v) { onGround = v; }
 };

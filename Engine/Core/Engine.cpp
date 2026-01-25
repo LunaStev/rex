@@ -16,7 +16,7 @@ bool Engine::init(const char* title, int width, int height) {
         return false;
     }
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!renderer) {
         std::cerr << "Renderer Error: " << SDL_GetError() << std::endl;
         return false;
@@ -27,7 +27,7 @@ bool Engine::init(const char* title, int width, int height) {
     return true;
 }
 
-void Engine::mainLoop(Game& game) {
+void Engine::mainLoop() {
     Uint32 lastTick = SDL_GetTicks();
 
     while (isRunning) {
@@ -37,18 +37,32 @@ void Engine::mainLoop(Game& game) {
         float dt = (currentTick - lastTick) / 1000.0f;
         lastTick = currentTick;
 
-        game.update(dt, input);
+        // Apply any scene change requests safely
+        scenes.applyPending(*this);
+
+        // If no scene left, end
+        if (scenes.empty()) {
+            isRunning = false;
+            break;
+        }
+
+        // Update & Render
+        scenes.updateTop(dt, input);
 
         graphics.clear(0, 0, 0, 255);
-        game.render(graphics);
+        scenes.renderAll(graphics);
         graphics.present();
-
-        SDL_Delay(16); // ~60FPS
     }
 }
 
 void Engine::quit() {
+    // Ensure scenes are properly exited before SDL quits
+    scenes.clear(*this);
+
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
+    renderer = nullptr;
+    window = nullptr;
+
     SDL_Quit();
 }

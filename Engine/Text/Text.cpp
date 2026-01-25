@@ -34,5 +34,4 @@ void Text::quit() {
         TTF_CloseFont(font);
         font = nullptr;
     }
-    TTF_Quit();
 }

@@ -36,28 +36,24 @@ public:
             return;
         }
 
-        // --- 플레이어 이동 ---
         if (input.isKeyHeld(RexKey::N1)) playerX -= playerSpeed * dt;
         if (input.isKeyHeld(RexKey::N2)) playerX += playerSpeed * dt;
 
         if (playerX < 0) playerX = 0;
         if (playerX + playerSize > 800) playerX = 800 - playerSize;
 
-        // --- 큐브 생성 ---
         spawnTimer += dt;
         if (spawnTimer >= spawnInterval) {
             spawnTimer = 0.0f;
             spawnCube();
             if (spawnInterval > 0.3f)
-                spawnInterval -= 0.01f; // 점점 빠르게
+                spawnInterval -= 0.01f;
         }
 
-        // --- 큐브 이동 ---
         for (auto& c : cubes) {
             if (!c.active) continue;
             c.y += c.speed * dt;
 
-            // 충돌 체크
             if (c.y + c.size >= playerY && c.y <= playerY + playerSize &&
                 c.x + c.size >= playerX && c.x <= playerX + playerSize) {
                 gameOver = true;
@@ -73,11 +69,9 @@ public:
     void render(Graphics& g) override {
         g.clear(10, 10, 30, 255);
 
-        // 플레이어
         g.drawRect((int)playerX, (int)playerY, (int)playerSize, (int)playerSize,
                    60, 200, 255, 255);
 
-        // 큐브들
         for (auto& c : cubes) {
             if (c.active)
                 g.drawRect((int)c.x, (int)c.y, (int)c.size, (int)c.size,

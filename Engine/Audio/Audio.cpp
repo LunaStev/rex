@@ -4,10 +4,20 @@ Audio::Audio() {}
 Audio::~Audio() { quit(); }
 
 bool Audio::init() {
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
-        std::cerr << "SDL_mixer Init Error: " << Mix_GetError() << std::endl;
+    int flags = MIX_INIT_OGG | MIX_INIT_MP3;
+    int inited = Mix_Init(flags);
+    if ((inited & flags) != flags) {
+        std::cerr << "SDL_mixer Mix_Init Error: " << Mix_GetError() << std::endl;
         return false;
     }
+
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        std::cerr << "SDL_mixer OpenAudio Error: " << Mix_GetError() << std::endl;
+        Mix_Quit();
+        return false;
+    }
+
+    Mix_AllocateChannels(32);
     return true;
 }
 
@@ -68,4 +78,5 @@ void Audio::quit() {
     soundEffects.clear();
 
     Mix_CloseAudio();
+    Mix_Quit();
 }

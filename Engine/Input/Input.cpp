@@ -107,7 +107,6 @@ void Input::setupKeyMap() {
         {RexKey::PASTE, SDL_SCANCODE_PASTE},
         {RexKey::FIND, SDL_SCANCODE_FIND},
         {RexKey::MUTE, SDL_SCANCODE_MUTE},
-        {RexKey::MUTE, SDL_SCANCODE_MUTE},
         {RexKey::VOLUMEUP, SDL_SCANCODE_VOLUMEUP},
         {RexKey::VOLUMEDOWN, SDL_SCANCODE_VOLUMEDOWN},
         
@@ -218,8 +217,6 @@ void Input::setupKeyMap() {
 
         {RexKey::CALL, SDL_SCANCODE_CALL},
         {RexKey::ENDCALL, SDL_SCANCODE_ENDCALL},
-
-        {RexKey::SCANCODES, SDL_NUM_SCANCODES},
     };
 
     for (auto& [rex, sdl] : extraKeys) {
@@ -228,44 +225,38 @@ void Input::setupKeyMap() {
 }
 
 void Input::update(bool& isRunning) {
+    if (keyboard) {
+        for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
+            prevKeyboard[i] = keyboard[i];
+        }
+    }
+
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT)
-            isRunning = false;
-        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE)
-            isRunning = false;
+        if (e.type == SDL_QUIT) isRunning = false;
+        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) isRunning = false;
     }
 
-    const Uint8* current = SDL_GetKeyboardState(NULL);
-
-    for (auto& [rexKey, scancode] : keyMap) {
-        bool held = current[scancode];
-        prevState[rexKey] = held;
-    }
-
-    state = current;
+    keyboard = SDL_GetKeyboardState(nullptr);
 }
 
-bool Input::isKeyHeld(RexKey key) {
+
+bool Input::isKeyHeld(RexKey key) const {
     auto it = keyMap.find(key);
-    if (it == keyMap.end() || !state) return false;
-    return state[it->second];
+    if (it == keyMap.end() || !keyboard) return false;
+    return keyboard[it->second] != 0;
 }
 
-bool Input::isKeyPressed(RexKey key) {
+bool Input::isKeyPressed(RexKey key) const {
     auto it = keyMap.find(key);
-    if (it == keyMap.end() || !state) return false;
-    SDL_Scancode code = it->second;
-    bool current = state[code];
-    bool prev = prevState[key];
-    return current && !prev;
+    if (it == keyMap.end() || !keyboard) return false;
+    auto sc = it->second;
+    return keyboard[sc] && !prevKeyboard[sc];
 }
 
-bool Input::isKeyReleased(RexKey key) {
+bool Input::isKeyReleased(RexKey key) const {
     auto it = keyMap.find(key);
-    if (it == keyMap.end() || !state) return false;
-    SDL_Scancode code = it->second;
-    bool current = state[code];
-    bool prev = prevState[key];
-    return !current && prev;
+    if (it == keyMap.end() || !keyboard) return false;
+    auto sc = it->second;
+    return !keyboard[sc] && prevKeyboard[sc];
 }
