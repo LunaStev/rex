@@ -1,43 +1,58 @@
 #include "Input.h"
+#include <cstring> // memcpy
 
 Input::Input() {
     setupKeyMap();
+    curKeyboard.fill(0);
+    prevKeyboard.fill(0);
+    curMouse.fill(0);
+    prevMouse.fill(0);
 }
 
 void Input::setupKeyMap() {
-    // Add mappings for A-Z
+    keyMap.clear();
+    keyMap.reserve(256);
+
+    // A-Z
     for (int i = 0; i < 26; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::A) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_A + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::A) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_A + i);
     }
 
-    // Add mappings for 0-9
+    // 1-0
     for (int i = 0; i < 10; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::N1) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_1 + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::N1) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_1 + i);
     }
 
-    // Add mappings for keypad 0-9
+    // Keypad 1-0
     for (int i = 0; i < 10; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::KP_1) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_KP_1 + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::KP_1) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_KP_1 + i);
     }
 
-    // Add mappings for F1-F24
+    // F1-F24
     for (int i = 0; i < 24; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::F1) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_F1 + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::F1) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_F1 + i);
     }
 
-    // Add mappings for INTERNATIONAL1-INTERNATIONAL9
+    // INTERNATIONAL1-9
     for (int i = 0; i < 9; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::INTERNATIONAL1) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_INTERNATIONAL1 + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::INTERNATIONAL1) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_INTERNATIONAL1 + i);
     }
 
-    // Add mappings for LANG1-LANG9
+    // LANG1-9
     for (int i = 0; i < 9; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::LANG1) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_LANG1 + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::LANG1) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_LANG1 + i);
     }
 
-    
+    // KP_A - KP_F (hex keypad)
     for (int i = 0; i < 6; ++i) {
-        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::KP_A) + i)] = static_cast<SDL_Scancode>(SDL_SCANCODE_KP_A + i);
+        keyMap[static_cast<RexKey>(static_cast<int>(RexKey::KP_A) + i)] =
+            static_cast<SDL_Scancode>(SDL_SCANCODE_KP_A + i);
     }
 
     const std::pair<RexKey, SDL_Scancode> extraKeys[] = {
@@ -52,24 +67,22 @@ void Input::setupKeyMap() {
         {RexKey::LBRACKET, SDL_SCANCODE_LEFTBRACKET},
         {RexKey::RBRACKET, SDL_SCANCODE_RIGHTBRACKET},
         {RexKey::BACKSLASH, SDL_SCANCODE_BACKSLASH},
-
         {RexKey::NONUSHASH, SDL_SCANCODE_NONUSHASH},
 
         {RexKey::SEMICOLON, SDL_SCANCODE_SEMICOLON},
         {RexKey::APOSTROPHE, SDL_SCANCODE_APOSTROPHE},
         {RexKey::GRAVE, SDL_SCANCODE_GRAVE},
-
         {RexKey::COMMA, SDL_SCANCODE_COMMA},
         {RexKey::PERIOD, SDL_SCANCODE_PERIOD},
         {RexKey::SLASH, SDL_SCANCODE_SLASH},
-        
+
         {RexKey::CAPSLOCK, SDL_SCANCODE_CAPSLOCK},
 
         {RexKey::PRINTSCREEN, SDL_SCANCODE_PRINTSCREEN},
         {RexKey::SCROLLLOCK, SDL_SCANCODE_SCROLLLOCK},
         {RexKey::PAUSE, SDL_SCANCODE_PAUSE},
         {RexKey::INSERT, SDL_SCANCODE_INSERT},
-        
+
         {RexKey::HOME, SDL_SCANCODE_HOME},
         {RexKey::PAGEUP, SDL_SCANCODE_PAGEUP},
         {RexKey::DELETE, SDL_SCANCODE_DELETE},
@@ -88,84 +101,8 @@ void Input::setupKeyMap() {
         {RexKey::KP_PLUS, SDL_SCANCODE_KP_PLUS},
         {RexKey::KP_ENTER, SDL_SCANCODE_KP_ENTER},
         {RexKey::KP_PERIOD, SDL_SCANCODE_KP_PERIOD},
-        
+
         {RexKey::NONUSBACKSLASH, SDL_SCANCODE_NONUSBACKSLASH},
-
-        {RexKey::APPLICATION, SDL_SCANCODE_APPLICATION},
-        {RexKey::POWER, SDL_SCANCODE_POWER},
-
-        {RexKey::KP_EQUALS, SDL_SCANCODE_KP_EQUALS},
-        {RexKey::EXECUTE, SDL_SCANCODE_EXECUTE},
-        {RexKey::HELP, SDL_SCANCODE_HELP},
-        {RexKey::MENU, SDL_SCANCODE_MENU},
-        {RexKey::SELECT, SDL_SCANCODE_SELECT},
-        {RexKey::STOP, SDL_SCANCODE_STOP},
-        {RexKey::AGAIN, SDL_SCANCODE_AGAIN},
-        {RexKey::UNDO, SDL_SCANCODE_UNDO},
-        {RexKey::CUT, SDL_SCANCODE_CUT},
-        {RexKey::COPY, SDL_SCANCODE_COPY},
-        {RexKey::PASTE, SDL_SCANCODE_PASTE},
-        {RexKey::FIND, SDL_SCANCODE_FIND},
-        {RexKey::MUTE, SDL_SCANCODE_MUTE},
-        {RexKey::VOLUMEUP, SDL_SCANCODE_VOLUMEUP},
-        {RexKey::VOLUMEDOWN, SDL_SCANCODE_VOLUMEDOWN},
-        
-        {RexKey::KP_COMMA, SDL_SCANCODE_KP_COMMA},
-        {RexKey::KP_EQUALSAS400, SDL_SCANCODE_KP_EQUALSAS400},
-        
-        {RexKey::ALTERASE, SDL_SCANCODE_ALTERASE},
-        {RexKey::SYSREQ, SDL_SCANCODE_SYSREQ},
-        {RexKey::CANCEL, SDL_SCANCODE_CANCEL},
-        {RexKey::CLEAR, SDL_SCANCODE_CLEAR},
-        {RexKey::PRIOR, SDL_SCANCODE_PRIOR},
-        {RexKey::RETURN2, SDL_SCANCODE_RETURN2},
-        {RexKey::SEPARATOR, SDL_SCANCODE_SEPARATOR},
-        {RexKey::OUT, SDL_SCANCODE_OUT},
-        {RexKey::OPER, SDL_SCANCODE_OPER},
-        {RexKey::CLEARAGAIN, SDL_SCANCODE_CLEARAGAIN},
-        {RexKey::CRSEL, SDL_SCANCODE_CRSEL},
-        {RexKey::EXSEL, SDL_SCANCODE_EXSEL},
-        
-        {RexKey::KP_00, SDL_SCANCODE_KP_00},
-        {RexKey::KP_000, SDL_SCANCODE_KP_000},
-        {RexKey::THOUSANDSSEPARATOR, SDL_SCANCODE_THOUSANDSSEPARATOR},
-        {RexKey::DECIMALSEPARATOR, SDL_SCANCODE_DECIMALSEPARATOR},
-        {RexKey::CURRENCYUNIT, SDL_SCANCODE_CURRENCYUNIT},
-        {RexKey::CURRENCYSUBUNIT, SDL_SCANCODE_CURRENCYSUBUNIT},
-        {RexKey::KP_LEFTPAREN, SDL_SCANCODE_KP_LEFTPAREN},
-        {RexKey::KP_RIGHTPAREN, SDL_SCANCODE_KP_RIGHTPAREN},
-        {RexKey::KP_LEFTBRACE, SDL_SCANCODE_KP_LEFTBRACE},
-        {RexKey::KP_RIGHTBRACE, SDL_SCANCODE_KP_RIGHTBRACE},
-        {RexKey::KP_TAB, SDL_SCANCODE_KP_TAB},
-        {RexKey::KP_BACKSPACE, SDL_SCANCODE_KP_BACKSPACE},
-        {RexKey::KP_XOR, SDL_SCANCODE_KP_XOR},
-        {RexKey::KP_POWER, SDL_SCANCODE_KP_POWER},
-        {RexKey::KP_PERCENT, SDL_SCANCODE_KP_PERCENT},
-        {RexKey::KP_LESS, SDL_SCANCODE_KP_LESS},
-        {RexKey::KP_GREATER, SDL_SCANCODE_KP_GREATER},
-        {RexKey::KP_AMPERSAND, SDL_SCANCODE_KP_AMPERSAND},
-        {RexKey::KP_DBLAMPERSAND, SDL_SCANCODE_KP_DBLAMPERSAND},
-        {RexKey::KP_VERTICALBAR, SDL_SCANCODE_KP_VERTICALBAR},
-        {RexKey::KP_DBLVERTICALBAR, SDL_SCANCODE_KP_DBLVERTICALBAR},
-        {RexKey::KP_COLON, SDL_SCANCODE_KP_COLON},
-        {RexKey::KP_HASH, SDL_SCANCODE_KP_HASH},
-        {RexKey::KP_SPACE, SDL_SCANCODE_KP_SPACE},
-        {RexKey::KP_AT, SDL_SCANCODE_KP_AT},
-        {RexKey::KP_EXCALM, SDL_SCANCODE_KP_EXCLAM},
-        {RexKey::KP_MEMSTORE, SDL_SCANCODE_KP_MEMSTORE},
-        {RexKey::KP_MEMRECALL, SDL_SCANCODE_KP_MEMRECALL},
-        {RexKey::KP_MEMCLEAR, SDL_SCANCODE_KP_MEMCLEAR},
-        {RexKey::KP_MEMADD, SDL_SCANCODE_KP_MEMADD},
-        {RexKey::KP_MEMSUBTRACT, SDL_SCANCODE_KP_MEMSUBTRACT},
-        {RexKey::KP_MEMMULTIPLY, SDL_SCANCODE_KP_MEMMULTIPLY},
-        {RexKey::KP_MEMDIVIDE, SDL_SCANCODE_KP_MEMDIVIDE},
-        {RexKey::KP_PLUSMINUS, SDL_SCANCODE_KP_PLUSMINUS},
-        {RexKey::KP_CLEAR, SDL_SCANCODE_KP_CLEAR},
-        {RexKey::KP_CLEARENTRY, SDL_SCANCODE_KP_CLEARENTRY},
-        {RexKey::KP_BINARY, SDL_SCANCODE_KP_BINARY},
-        {RexKey::KP_OCTAL, SDL_SCANCODE_KP_OCTAL},
-        {RexKey::KP_DECIMAL, SDL_SCANCODE_KP_DECIMAL},
-        {RexKey::KP_HEXADECIMAL, SDL_SCANCODE_KP_HEXADECIMAL},
 
         {RexKey::LSHIFT, SDL_SCANCODE_LSHIFT},
         {RexKey::LCTRL, SDL_SCANCODE_LCTRL},
@@ -175,88 +112,149 @@ void Input::setupKeyMap() {
         {RexKey::RSHIFT, SDL_SCANCODE_RSHIFT},
         {RexKey::RALT, SDL_SCANCODE_RALT},
         {RexKey::RGUI, SDL_SCANCODE_RGUI},
-
-        {RexKey::MODE, SDL_SCANCODE_MODE},
-
-        {RexKey::AUDIONEXT, SDL_SCANCODE_AUDIONEXT},
-        {RexKey::AUDIOPREV, SDL_SCANCODE_AUDIOPREV},
-        {RexKey::AUDIOSTOP, SDL_SCANCODE_AUDIOSTOP},
-        {RexKey::AUDIOPLAY, SDL_SCANCODE_AUDIOPLAY},
-        {RexKey::AUDIOMUTE, SDL_SCANCODE_AUDIOMUTE},
-        {RexKey::WWW, SDL_SCANCODE_WWW},
-        {RexKey::MAIL, SDL_SCANCODE_MAIL},
-        {RexKey::CALCULATOR, SDL_SCANCODE_CALCULATOR},
-        {RexKey::COMPUTER, SDL_SCANCODE_COMPUTER},
-        {RexKey::AC_SEARCH, SDL_SCANCODE_AC_SEARCH},
-        {RexKey::AC_HOME, SDL_SCANCODE_AC_HOME},
-        {RexKey::AC_BACK, SDL_SCANCODE_AC_BACK},
-        {RexKey::AC_FORWARD, SDL_SCANCODE_AC_FORWARD},
-        {RexKey::AC_STOP, SDL_SCANCODE_AC_STOP},
-        {RexKey::AC_REFRESH, SDL_SCANCODE_AC_REFRESH},
-        {RexKey::AC_BOOKMARKS, SDL_SCANCODE_AC_BOOKMARKS},
-
-        {RexKey::BRIGHTNESSDOWN, SDL_SCANCODE_BRIGHTNESSDOWN},
-        {RexKey::BRIGHTNESSUP, SDL_SCANCODE_BRIGHTNESSUP},
-        {RexKey::DISPLAYSWITCH, SDL_SCANCODE_DISPLAYSWITCH},
-
-        {RexKey::KBDILLUMTOGGLE, SDL_SCANCODE_KBDILLUMTOGGLE},
-        {RexKey::KBDILLUMDOWN, SDL_SCANCODE_KBDILLUMDOWN},
-        {RexKey::KBDILLUMUP, SDL_SCANCODE_KBDILLUMUP},
-        {RexKey::EJECT, SDL_SCANCODE_EJECT},
-        {RexKey::SLEEP, SDL_SCANCODE_SLEEP},
-
-        {RexKey::APP1, SDL_SCANCODE_APP1},
-        {RexKey::APP2, SDL_SCANCODE_APP2},
-
-        {RexKey::AUDIOREWIND, SDL_SCANCODE_AUDIOREWIND},
-        {RexKey::AUDIOFASTFORWARD, SDL_SCANCODE_AUDIOFASTFORWARD},
-
-        {RexKey::SOFTLEFT, SDL_SCANCODE_SOFTLEFT},
-
-        {RexKey::SOFTRIGHT, SDL_SCANCODE_SOFTRIGHT},
-
-        {RexKey::CALL, SDL_SCANCODE_CALL},
-        {RexKey::ENDCALL, SDL_SCANCODE_ENDCALL},
     };
 
-    for (auto& [rex, sdl] : extraKeys) {
-        keyMap[rex] = sdl;
-    }
+    for (auto& p : extraKeys) keyMap[p.first] = p.second;
+}
+
+SDL_Scancode Input::toScan(RexKey key) const {
+    auto it = keyMap.find(key);
+    if (it == keyMap.end()) return SDL_SCANCODE_UNKNOWN;
+    return it->second;
+}
+
+void Input::clearAllStates() {
+    curKeyboard.fill(0);
+    prevKeyboard.fill(0);
+    curMouse.fill(0);
+    prevMouse.fill(0);
+    mouseDX = mouseDY = 0;
+    wheelX = wheelY = 0;
+    textInput.clear();
 }
 
 void Input::update(bool& isRunning) {
-    if (keyboard) {
-        for (int i = 0; i < SDL_NUM_SCANCODES; ++i) {
-            prevKeyboard[i] = keyboard[i];
-        }
-    }
+    // prev <- cur (스냅샷)
+    prevKeyboard = curKeyboard;
+    prevMouse = curMouse;
+
+    // per-frame reset
+    windowResized = false;
+    mouseDX = mouseDY = 0;
+    wheelX = wheelY = 0;
+    textInput.clear();
 
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_QUIT) isRunning = false;
-        if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) isRunning = false;
+        switch (e.type) {
+        case SDL_QUIT:
+            isRunning = false;
+            break;
+
+        case SDL_KEYDOWN:
+            if (closeOnEscape && !e.key.repeat && e.key.keysym.sym == SDLK_ESCAPE) {
+                isRunning = false;
+            }
+            break;
+
+        case SDL_WINDOWEVENT:
+            if (e.window.event == SDL_WINDOWEVENT_FOCUS_LOST) {
+                // ALT+TAB 등에서 키 stuck 방지
+                clearAllStates();
+            } else if (e.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
+                       e.window.event == SDL_WINDOWEVENT_RESIZED) {
+                windowResized = true;
+                windowW = e.window.data1;
+                windowH = e.window.data2;
+            } else if (e.window.event == SDL_WINDOWEVENT_CLOSE) {
+                isRunning = false;
+            }
+            break;
+
+        case SDL_MOUSEMOTION:
+            mouseX = e.motion.x;
+            mouseY = e.motion.y;
+            mouseDX += e.motion.xrel;
+            mouseDY += e.motion.yrel;
+            break;
+
+        case SDL_MOUSEBUTTONDOWN: {
+            uint8_t b = e.button.button;
+            if (b < curMouse.size()) curMouse[b] = 1;
+            break;
+        }
+        case SDL_MOUSEBUTTONUP: {
+            uint8_t b = e.button.button;
+            if (b < curMouse.size()) curMouse[b] = 0;
+            break;
+        }
+        case SDL_MOUSEWHEEL:
+            wheelX += e.wheel.x;
+            wheelY += e.wheel.y;
+            break;
+
+        case SDL_TEXTINPUT:
+            if (textInputActive) textInput += e.text.text;
+            break;
+
+        default:
+            break;
+        }
     }
 
-    keyboard = SDL_GetKeyboardState(nullptr);
+    // 키보드 상태는 항상 마지막에 스냅샷 뜸
+    SDL_PumpEvents();
+    const Uint8* sdlState = SDL_GetKeyboardState(nullptr);
+    if (sdlState) {
+        std::memcpy(curKeyboard.data(), sdlState, SDL_NUM_SCANCODES);
+    } else {
+        curKeyboard.fill(0);
+    }
 }
 
-
 bool Input::isKeyHeld(RexKey key) const {
-    auto it = keyMap.find(key);
-    if (it == keyMap.end() || !keyboard) return false;
-    return keyboard[it->second] != 0;
+    SDL_Scancode sc = toScan(key);
+    if (sc == SDL_SCANCODE_UNKNOWN) return false;
+    return curKeyboard[sc] != 0;
 }
 
 bool Input::isKeyPressed(RexKey key) const {
-    auto it = keyMap.find(key);
-    if (it == keyMap.end() || !keyboard) return false;
-    auto sc = it->second;
-    return keyboard[sc] && !prevKeyboard[sc];
+    SDL_Scancode sc = toScan(key);
+    if (sc == SDL_SCANCODE_UNKNOWN) return false;
+    return (curKeyboard[sc] != 0) && (prevKeyboard[sc] == 0);
 }
 
 bool Input::isKeyReleased(RexKey key) const {
-    auto it = keyMap.find(key);
-    if (it == keyMap.end() || !keyboard) return false;
-    auto sc = it->second;
-    return !keyboard[sc] && prevKeyboard[sc];
+    SDL_Scancode sc = toScan(key);
+    if (sc == SDL_SCANCODE_UNKNOWN) return false;
+    return (curKeyboard[sc] == 0) && (prevKeyboard[sc] != 0);
+}
+
+// ---- Mouse ----
+bool Input::isMouseHeld(uint8_t button) const {
+    if (button >= curMouse.size()) return false;
+    return curMouse[button] != 0;
+}
+
+bool Input::isMousePressed(uint8_t button) const {
+    if (button >= curMouse.size()) return false;
+    return (curMouse[button] != 0) && (prevMouse[button] == 0);
+}
+
+bool Input::isMouseReleased(uint8_t button) const {
+    if (button >= curMouse.size()) return false;
+    return (curMouse[button] == 0) && (prevMouse[button] != 0);
+}
+
+// ---- Text Input ----
+void Input::startTextInput() {
+    if (textInputActive) return;
+    textInputActive = true;
+    SDL_StartTextInput();
+}
+
+void Input::stopTextInput() {
+    if (!textInputActive) return;
+    textInputActive = false;
+    SDL_StopTextInput();
 }

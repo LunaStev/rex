@@ -3,12 +3,13 @@
 #include <vector>
 #include <type_traits>
 #include <utility>
+#include <deque>
 
 #include "Scene.h"
 
-class Engine;   // forward
-class Input;    // forward
-class Graphics; // forward
+class Engine;
+class Input;
+class Graphics;
 
 class SceneManager {
 public:
@@ -17,12 +18,10 @@ public:
     Scene* current();
     const Scene* current() const;
 
-    // Schedule operations (applied in applyPending)
-    void replace(std::unique_ptr<Scene> scene); // clear stack -> set new root
-    void push(std::unique_ptr<Scene> scene);    // push new scene
-    void pop();                                 // pop top scene
+    void replace(std::unique_ptr<Scene> scene);
+    void push(std::unique_ptr<Scene> scene);
+    void pop();
 
-    // Convenience templates (Scene-derived only)
     template<typename T, typename... Args>
     void replace(Args&&... args) {
         static_assert(std::is_base_of_v<Scene, T>, "SceneManager::replace<T>: T must derive from Scene");
@@ -41,18 +40,18 @@ public:
     void renderAll(Graphics& g);
 
     bool empty() const { return scenes.empty(); }
-    void clear(Engine& engine); // public wrapper
+    void clear(Engine& engine);
 
 private:
-    enum class PendingType { None, Replace, Push, Pop };
+    enum class PendingType { Replace, Push, Pop };
 
     struct PendingOp {
-        PendingType type = PendingType::None;
-        std::unique_ptr<Scene> scene = nullptr;
+        PendingType type;
+        std::unique_ptr<Scene> scene; // Pop이면 null
     };
 
     std::vector<std::unique_ptr<Scene>> scenes;
-    PendingOp pending;
+    std::deque<PendingOp> pending;
 
     void clearNow(Engine& engine);
 

@@ -1,25 +1,34 @@
 #pragma once
 #include <vector>
-#include "../Graphics/Graphics.h"
+#include <cstdint>
+
+class Graphics;
 
 struct Tile {
-    int type; // 0=empty, 1=ground, 2=grass
+    uint8_t type = 0; // 0=empty, 1=ground, 2=grass
 };
 
 class World {
 public:
-    World() : width(0), height(0) {}
-    
-    static const int TILE_SIZE = 40;
+    static constexpr int TILE_SIZE = 40;
+
+    int width = 0;
+    int height = 0;
     std::vector<Tile> tiles;
-    int width, height;
 
-    void generateFlat(int w, int h, int groundY);
-    void render(Graphics& g);
-    float getGroundY(float x, float yBottom);
+    void generateFlat(int w, int h, int groundTy);
 
-    int getTile(int tx, int ty) const;
+    // 카메라/줌 적용해서 렌더
+    void render(Graphics& g) const;
+
+    // x 컬럼에서 yBottom(픽셀) 기준 아래쪽으로 첫 solid 타일의 top Y(픽셀) 반환
+    float getGroundY(float x, float yBottom) const;
+
+    int  getTile(int tx, int ty) const;
     void setTile(int tx, int ty, int type);
 
     bool isSolid(int tx, int ty) const;
+
+private:
+    inline int idx(int tx, int ty) const { return ty * width + tx; }
 };

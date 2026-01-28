@@ -1,31 +1,46 @@
 #pragma once
 #include <SDL2/SDL_mixer.h>
-#include <string>
 #include <iostream>
-#include <unordered_map>
+#include <algorithm>
 
 class Audio {
-private:
-    Mix_Music* currentMusic = nullptr;
-    std::unordered_map<std::string, Mix_Chunk*> soundEffects;
-
 public:
-    Audio();
-    ~Audio();
+    Audio() = default;
+    ~Audio() { quit(); }
 
-    bool init();
+    Audio(const Audio&) = delete;
+    Audio& operator=(const Audio&) = delete;
 
-    bool loadMusic(const std::string& path);
-    void playMusic(int loops = -1);
+    // SDL_mixer 전역 초기화/종료 (ref-count)
+    bool init(
+        int frequency = 44100,
+        Uint16 format = MIX_DEFAULT_FORMAT,
+        int channels = 2,
+        int chunkSize = 2048,
+        int allocateChannels = 32,
+        int initFlags = (MIX_INIT_OGG | MIX_INIT_MP3)
+    );
+
+    void quit();
+
+    bool ready() const;
+
+    int  playSound(Mix_Chunk* chunk, int loops = 0, int channel = -1, int volume = -1);
+    void haltChannel(int channel);
+    void haltAllSounds();
+
+    void setMasterSoundVolume(int volume); // 0~128
+    int  getMasterSoundVolume() const;
+
+    // ---- Music (Mix_Music*) ----
+    bool playMusic(Mix_Music* music, int loops = -1, int volume = -1);
     void pauseMusic();
     void resumeMusic();
     void stopMusic();
 
-    bool loadSound(const std::string& name, const std::string& path);
-    void playSound(const std::string& name, int loops = 0);
-
     void setMusicVolume(int volume); // 0~128
-    void setSoundVolume(const std::string& name, int volume);
+    int  getMusicVolume() const;
 
-    void quit();
+private:
+    static int clampVol(int v) { return std::clamp(v, 0, 128); }
 };

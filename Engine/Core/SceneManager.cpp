@@ -12,43 +12,37 @@ const Scene* SceneManager::current() const {
 }
 
 void SceneManager::replace(std::unique_ptr<Scene> scene) {
-    pending.type = PendingType::Replace;
-    pending.scene = std::move(scene);
+    pending.push_back(PendingOp{ PendingType::Replace, std::move(scene) });
 }
 
 void SceneManager::push(std::unique_ptr<Scene> scene) {
-    pending.type = PendingType::Push;
-    pending.scene = std::move(scene);
+    pending.push_back(PendingOp{ PendingType::Push, std::move(scene) });
 }
 
 void SceneManager::pop() {
-    pending.type = PendingType::Pop;
-    pending.scene.reset();
+    pending.push_back(PendingOp{ PendingType::Pop, nullptr });
 }
 
 void SceneManager::applyPending(Engine& engine) {
-    if (pending.type == PendingType::None) return;
+    while (!pending.empty()) {
+        PendingOp op = std::move(pending.front());
+        pending.pop_front();
 
-    switch (pending.type) {
-        case PendingType::Replace:
-            doReplaceNow(engine, std::move(pending.scene));
-            break;
-        case PendingType::Push:
-            doPushNow(engine, std::move(pending.scene));
-            break;
-        case PendingType::Pop:
-            doPopNow(engine);
-            break;
-        default:
-            break;
+        switch (op.type) {
+            case PendingType::Replace:
+                doReplaceNow(engine, std::move(op.scene));
+                break;
+            case PendingType::Push:
+                doPushNow(engine, std::move(op.scene));
+                break;
+            case PendingType::Pop:
+                doPopNow(engine);
+                break;
+        }
     }
-
-    pending.type = PendingType::None;
-    pending.scene.reset();
 }
 
 void SceneManager::clearNow(Engine& engine) {
-    // Exit from top to bottom
     while (!scenes.empty()) {
         scenes.back()->onExit(engine);
         scenes.pop_back();
@@ -83,7 +77,6 @@ void SceneManager::doPopNow(Engine& engine) {
     if (!scenes.empty()) {
         scenes.back()->onResume(engine);
     } else {
-        // No scene left -> stop engine loop
         engine.stop();
     }
 }
@@ -102,6 +95,5 @@ void SceneManager::renderAll(Graphics& g) {
 
 void SceneManager::clear(Engine& engine) {
     clearNow(engine);
-    pending.type = PendingType::None;
-    pending.scene.reset();
+    pending.clear();
 }
