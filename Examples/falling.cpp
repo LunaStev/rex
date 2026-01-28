@@ -1,9 +1,13 @@
 #define SDL_MAIN_HANDLED
 #include "../Engine/Core/Engine.h"
+#include "../Engine/Core/Scene.h"
 #include "../Engine/Text/Text.h"
+
 #include <vector>
 #include <cstdlib>
 #include <ctime>
+#include <cstdio>
+#include <algorithm>
 
 struct Cube {
     float x, y, size;
@@ -11,7 +15,7 @@ struct Cube {
     bool active;
 };
 
-class FallingCubesGame : public Game {
+class FallingCubesGame : public Scene {
     float playerX = 380.0f;
     float playerY = 540.0f;
     float playerSpeed = 350.0f;
@@ -23,16 +27,22 @@ class FallingCubesGame : public Game {
     int score = 0;
     bool gameOver = false;
 
+    Text text;
+
 public:
     FallingCubesGame() {
-        std::srand((unsigned)time(nullptr));
+        std::srand((unsigned)std::time(nullptr));
+    }
+
+    void onEnter(Engine& engine) override {
+        text.init(engine.getAssets(), "assets/fonts/rex_engine.ttf", 28);
     }
 
     void update(float dt, Input& input) override {
+        dt = std::min(dt, 0.05f);
+
         if (gameOver) {
-            if (input.isKeyHeld(RexKey::RETURN)) {
-                reset();
-            }
+            if (input.isKeyPressed(RexKey::RETURN)) reset();
             return;
         }
 
@@ -46,8 +56,7 @@ public:
         if (spawnTimer >= spawnInterval) {
             spawnTimer = 0.0f;
             spawnCube();
-            if (spawnInterval > 0.3f)
-                spawnInterval -= 0.01f;
+            if (spawnInterval > 0.3f) spawnInterval -= 0.01f;
         }
 
         for (auto& c : cubes) {
@@ -73,22 +82,16 @@ public:
                    60, 200, 255, 255);
 
         for (auto& c : cubes) {
-            if (c.active)
+            if (c.active) {
                 g.drawRect((int)c.x, (int)c.y, (int)c.size, (int)c.size,
                            255, 100, 100, 255);
+            }
         }
 
-        // UI
         SDL_Color white = {255, 255, 255, 255};
-        static Text text;
-        static bool initialized = false;
-        if (!initialized) {
-            text.init("assets/fonts/rex_engine.ttf", 28);
-            initialized = true;
-        }
 
         char buf[128];
-        sprintf(buf, "Score: %d", score);
+        std::snprintf(buf, sizeof(buf), "Score: %d", score);
         text.render(g, buf, 20, 20, white);
 
         if (gameOver) {
@@ -100,13 +103,17 @@ public:
         g.present();
     }
 
+    ~FallingCubesGame() override {
+        text.quit();
+    }
+
 private:
     void spawnCube() {
         Cube c;
-        c.size = 30 + (rand() % 30);
-        c.x = (float)(rand() % (800 - (int)c.size));
+        c.size = 30 + (std::rand() % 30);
+        c.x = (float)(std::rand() % (800 - (int)c.size));
         c.y = -c.size;
-        c.speed = 150 + (rand() % 150);
+        c.speed = 150 + (std::rand() % 150);
         c.active = true;
         cubes.push_back(c);
     }
@@ -123,4 +130,5 @@ private:
 
 int main() {
     Engine::run<FallingCubesGame>("Falling Cubes - Rex Engine", 800, 600);
+    return 0;
 }

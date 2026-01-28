@@ -9,6 +9,8 @@
 #include "../Engine/Entity/Entity.h"
 #include "../Engine/Entity/EntityManager.h"
 #include "../Engine/Physics/Physics.h"
+#include <SDL2/SDL_mixer.h>
+#include <cstdio>
 
 #include <vector>
 #include <random>
@@ -91,6 +93,10 @@ class RogueScene final : public Scene {
 
     Text text;
     Audio audio;
+    Mix_Chunk* s_hit = nullptr;
+    Mix_Chunk* s_attack = nullptr;
+    Mix_Chunk* s_dead = nullptr;
+
     std::chrono::steady_clock::time_point startTime;
 
 public:
@@ -102,12 +108,17 @@ public:
         physics.gravity = 0.0f;
 
         // Text/Audio init
-        text.init("assets/fonts/rex_engine.ttf", 24);
+    text.init(engine.getAssets(), "assets/fonts/rex_engine.ttf", 24);
 
-        audio.init();
-        audio.loadSound("hit", "assets/sounds/hit.wav");
-        audio.loadSound("attack", "assets/sounds/attack.wav");
-        audio.loadSound("dead", "assets/sounds/dead.wav");
+    audio.init();
+
+    s_hit = Mix_LoadWAV("assets/sounds/hit.wav");
+    s_attack = Mix_LoadWAV("assets/sounds/attack.wav");
+    s_dead = Mix_LoadWAV("assets/sounds/dead.wav");
+
+    if (!s_hit)   std::fprintf(stderr, "Load hit.wav failed: %s\n", Mix_GetError());
+    if (!s_attack)std::fprintf(stderr, "Load attack.wav failed: %s\n", Mix_GetError());
+    if (!s_dead)  std::fprintf(stderr, "Load dead.wav failed: %s\n", Mix_GetError());
 
         reset();
     }
@@ -153,7 +164,7 @@ public:
 
         if (p && input.isKeyPressed(RexKey::SPACE) && attackCooldown <= 0.0f) {
             attackCooldown = 0.18f;
-            audio.playSound("attack");
+            if (s_attack) audio.playSound(s_attack);
 
             float px = p->getX() + p->getWidth()*0.5f;
             float py = p->getY() + p->getHeight()*0.5f;
@@ -177,10 +188,10 @@ public:
                     e->hp -= 25;
                     if (e->hp <= 0) {
                         e->kill();
-                        audio.playSound("dead");
+                        if (s_dead) audio.playSound(s_dead);
                         score += 10;
                     } else {
-                        audio.playSound("hit");
+                        if (s_hit) audio.playSound(s_hit);
 
                         if (dist > 0.0001f) {
                             dx /= dist;
@@ -205,7 +216,7 @@ public:
                         if (playerHP <= 0) {
                             playerHP = 0;
                             gameOver = true;
-                            audio.playSound("dead");
+                            if (s_dead) audio.playSound(s_dead);
                         }
                     }
                 }
@@ -243,17 +254,30 @@ public:
         SDL_Color yellow = {255, 255, 100, 255};
         SDL_Color gray   = {200, 200, 200, 255};
 
-        text.render(g, "HP: " + std::to_string(playerHP), 10, 10, red);
-        text.render(g, "Score: " + std::to_string(score), 10, 40, yellow);
+        std::string hp = "HP: " + std::to_string(playerHP);
+        text.render(g, hp.c_str(), 10, 10, red);
+        
+        std::string sc = "Score: " + std::to_string(score);
+        text.render(g, sc.c_str(), 10, 40, yellow);
 
         auto now = std::chrono::steady_clock::now();
         auto sec = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-        text.render(g, "Time: " + std::to_string(sec), 10, 70, white);
+        std::string tm = "Time: " + std::to_string(sec);
+        text.render(g, tm.c_str(), 10, 70, white);
 
         if (gameOver) {
             text.render(g, "GAME OVER", 300, 260, gray);
             text.render(g, "Press ENTER to Restart", 220, 300, gray);
         }
+    }
+
+    ~RogueScene() override {
+        if (s_hit) Mix_FreeChunk(s_hit);
+        if (s_attack) Mix_FreeChunk(s_attack);
+        if (s_dead) Mix_FreeChunk(s_dead);
+
+        text.quit();
+        audio.quit();
     }
 
 private:
