@@ -19,6 +19,7 @@ bool Texture::load(SDL_Renderer* renderer, const std::string& path) {
     if (!renderer) return false;
 
     SDL_Surface* surface = nullptr;
+    SDL_QueryTexture(tex, nullptr, nullptr, &w, &h);
 
 #if REX_HAS_SDL_IMAGE
     if (g_img_refs++ == 0) {

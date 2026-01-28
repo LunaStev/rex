@@ -3,6 +3,8 @@
 #include "../World/World.h"
 #include "../Physics/Physics.h"
 #include "../Entity/EntityManager.h"
+#include "../Text/Text.h"
+
 #include "LuaVM.h"
 #include "LuaBindings.h"
 
@@ -23,6 +25,19 @@ public:
     EntityManager& entities() { return em; }
     Physics& physics() { return ph; }
 
+    // ---- HUD/Text helper (LuaBindings에서 씀) ----
+    bool ensureHudFont(Engine& engine, const std::string& fontPath, int size) {
+        if (hudInited && hudFontPath == fontPath && hudFontSize == size) return true;
+        hudText.quit();
+        hudInited = hudText.init(engine.getAssets(), fontPath, size);
+        if (hudInited) {
+            hudFontPath = fontPath;
+            hudFontSize = size;
+        }
+        return hudInited;
+    }
+    Text& hud() { return hudText; }
+
 private:
     std::string entry;
 
@@ -32,6 +47,12 @@ private:
     World w;
     EntityManager em;
     Physics ph;
+
+    // HUD 텍스트 캐시
+    Text hudText;
+    bool hudInited = false;
+    std::string hudFontPath;
+    int hudFontSize = 0;
 
 private:
     bool call(const char* fn, int nargs, int nrets);

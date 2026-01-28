@@ -34,24 +34,27 @@ void LuaScene::onEnter(Engine& engine) {
         return;
     }
 
-    // optional hook: onEnter()
     call("onEnter", 0, 0);
 }
 
 void LuaScene::onExit(Engine& engine) {
     (void)engine;
     call("onExit", 0, 0);
-    // LuaVM dtor가 정리
+
+    // HUD 텍스트 리소스 정리
+    hudText.quit();
+    hudInited = false;
+    hudFontPath.clear();
+    hudFontSize = 0;
 }
 
 void LuaScene::update(float dt, Input& input) {
     (void)input;
 
-    // update(dt)
     lua_pushnumber(lua.L(), dt);
     call("update", 1, 0);
 
-    // 기본 물리 적용: Lua는 vx/vy만 바꾸고, 실제 이동/충돌은 엔진이 처리
+    // 기본 물리 적용 (Lua는 속도만 바꾸고, 이동/충돌은 엔진)
     em.forEachAlive([&](Entity& e) {
         if (e.isCollidable()) ph.apply(e, dt, w);
     });
@@ -60,10 +63,8 @@ void LuaScene::update(float dt, Input& input) {
 }
 
 void LuaScene::render(Graphics& g) {
-    // render()
+    (void)g;
     call("render", 0, 0);
 
-    // 디버그로 월드/엔티티 자동 렌더 보고 싶으면 아래 주석 풀어
-    // w.render(g);
-    // em.renderAll(g);
+    // 필요하면 Lua에서 rex.world.render(), rex.entity.render_all() 호출해서 그림
 }
