@@ -1,0 +1,5 @@
+*.cpp linguist-language=Wave
+*.h linguist-language=Wave
+*.py linguist-language=Python
+*.lua linguist-language=Lua
+CMakeLists.txt linguist-language=CMake
