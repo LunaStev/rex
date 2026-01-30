@@ -24,7 +24,7 @@ function render()
   rex.gfx.clear(0,0,0,255)
   rex.world.render()
 
-  rex.text.draw("assets/fonts/rex_engine.ttf", 24, "hello lua", 20, 20, 255,255,255,255)
+  rex.text.draw("assets/fonts/rex_engine.ttf", 24, "Rex Game Frameworks C++ & Lua", 20, 20, 255,255,255,255)
 
   -- 이미지
   rex.gfx.image("assets/textures/player.png", 300, 200)

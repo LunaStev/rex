@@ -26,16 +26,7 @@ public:
     Physics& physics() { return ph; }
 
     // ---- HUD/Text helper (LuaBindings에서 씀) ----
-    bool ensureHudFont(Engine& engine, const std::string& fontPath, int size) {
-        if (hudInited && hudFontPath == fontPath && hudFontSize == size) return true;
-        hudText.quit();
-        hudInited = hudText.init(engine.getAssets(), fontPath, size);
-        if (hudInited) {
-            hudFontPath = fontPath;
-            hudFontSize = size;
-        }
-        return hudInited;
-    }
+    bool ensureHudFont(Engine& engine, const std::string& fontPath, int size);
     Text& hud() { return hudText; }
 
 private:

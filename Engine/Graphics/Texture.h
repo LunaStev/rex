@@ -4,11 +4,6 @@
 
 class Texture {
 public:
-    SDL_Texture* handle() const { return tex; }
-    int width() const { return w; }
-    int height() const { return h; }
-
-public:
     Texture() = default;
     ~Texture() { destroy(); }
 
@@ -28,6 +23,7 @@ public:
     void destroy();
 
     SDL_Texture* sdl() const { return tex; }
+    SDL_Texture* handle() const { return tex; }
     int width() const { return w; }
     int height() const { return h; }
     bool valid() const { return tex != nullptr; }

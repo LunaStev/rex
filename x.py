@@ -1,15 +1,18 @@
+#!/usr/bin/env python3
 import os
 import platform
 import subprocess
 import shutil
-import psutil  # pip install psutil
-import cpuinfo  # pip install py-cpuinfo
 import sys
 import time
+import argparse
 
-def run(cmd):
+import psutil       # pip install psutil
+import cpuinfo      # pip install py-cpuinfo
+
+def run(cmd, cwd=None):
     print("> " + " ".join(cmd))
-    subprocess.check_call(cmd)
+    subprocess.check_call(cmd, cwd=cwd)
 
 def print_system_info():
     print("\n==============================")
@@ -18,7 +21,7 @@ def print_system_info():
     print(f"OS: {platform.system()} {platform.release()} ({platform.version()})")
     print(f"Architecture: {platform.machine()}")
     print(f"Python Version: {platform.python_version()}")
-    print(f"Processor: {cpuinfo.get_cpu_info()['brand_raw']}")
+    print(f"Processor: {cpuinfo.get_cpu_info().get('brand_raw', 'Unknown')}")
     print(f"Physical Cores: {psutil.cpu_count(logical=False)}")
     print(f"Logical Cores: {psutil.cpu_count(logical=True)}")
     print(f"RAM Total: {round(psutil.virtual_memory().total / (1024**3), 2)} GB")
@@ -50,76 +53,79 @@ def print_system_info():
 
     print("==============================\n")
 
-def main():
-    build_dir = "build"
+def detect_jobs():
+    logical = psutil.cpu_count(logical=True)
+    physical = psutil.cpu_count(logical=False)
+    return logical or physical or 1
+
+def configure(build_dir, cmake_args):
     os.makedirs(build_dir, exist_ok=True)
-    os.chdir(build_dir)
+    run(["cmake", "-S", ".", "-B", build_dir] + cmake_args)
+
+def build(build_dir, jobs, config):
+    cmd = ["cmake", "--build", build_dir, "--parallel", str(jobs)]
+    if config:
+        cmd += ["--config", config]
+    run(cmd)
+
+def install(build_dir, prefix, config, destdir=None):
+    cmd = ["cmake", "--install", build_dir, "--prefix", prefix]
+    if config:
+        cmd += ["--config", config]
+    env = os.environ.copy()
+    if destdir:
+        env["DESTDIR"] = destdir
+    print("> " + " ".join(cmd) + (f" (DESTDIR={destdir})" if destdir else ""))
+    subprocess.check_call(cmd, env=env)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cmd", nargs="?", default="build", choices=["build", "install", "clean"])
+    parser.add_argument("--build-dir", default="build")
+    parser.add_argument("--config", default="Release")  # Debug/Release
+    parser.add_argument("--prefix", default="/usr/local")
+    parser.add_argument("--destdir", default=None)
+    parser.add_argument("--no-examples", action="store_true")
+    parser.add_argument("--no-runtime", action="store_true")
+    parser.add_argument("--sdk", action="store_true")
+    args = parser.parse_args()
 
     print_system_info()
+    jobs = detect_jobs()
+    print(f"🧩 Using up to {jobs} threads for compilation\n")
 
-    logical_cores = psutil.cpu_count(logical=True)
-    physical_cores = psutil.cpu_count(logical=False)
-    max_cores = logical_cores or physical_cores or 1
-    print(f"🧩 Using up to {max_cores} threads for compilation\n")
+    if args.cmd == "clean":
+        if os.path.isdir(args.build_dir):
+            print(f"🧹 removing {args.build_dir}")
+            shutil.rmtree(args.build_dir)
+        return
 
-    run(["cmake", ".."])
+    cmake_args = [f"-DCMAKE_BUILD_TYPE={args.config}"]
 
-    system = platform.system()
-    print(f"Detected OS: {system}\n")
+    if args.no_examples:
+        cmake_args += ["-DREX_BUILD_EXAMPLES=OFF"]
+    if args.no_runtime:
+        cmake_args += ["-DREX_INSTALL_RUNTIME=OFF"]
+    if args.sdk:
+        cmake_args += ["-DREX_INSTALL_SDK=ON"]
 
-    start_time = time.time()
+    cmake_args += ["-DREX_BUILD_LAUNCHER=ON"]
 
+    start = time.time()
     try:
-        if system == "Windows":
-            if shutil.which("msbuild"):
-                run(["msbuild", "ALL_BUILD.vcxproj", f"/m:{max_cores}"])
-            elif shutil.which("ninja"):
-                run(["ninja", f"-j{max_cores}"])
-            else:
-                run(["cmake", "--build", ".", "--", f"/m:{max_cores}"])
+        configure(args.build_dir, cmake_args)
+        build(args.build_dir, jobs, args.config)
 
-        elif system == "Linux":
-            if os.path.exists("build.ninja"):
-                run(["ninja", f"-j{max_cores}"])
-            elif os.path.exists("Makefile"):
-                run(["make", f"-j{max_cores}"])
-            else:
-                run(["cmake", "--build", ".", "--", f"-j{max_cores}"])
-
-        elif system == "Darwin":
-            if os.path.exists("build.ninja"):
-                run(["ninja", f"-j{max_cores}"])
-            elif os.path.exists("Makefile"):
-                run(["make", f"-j{max_cores}"])
-            elif shutil.which("xcodebuild"):
-                run(["xcodebuild", "-configuration", "Release", "-parallelizeTargets", f"-jobs", str(max_cores)])
-            else:
-                run(["cmake", "--build", ".", "--", f"-j{max_cores}"])
-
-        elif "BSD" in system:
-            if shutil.which("gmake"):
-                run(["gmake", f"-j{max_cores}"])
-            elif os.path.exists("Makefile"):
-                run(["make", f"-j{max_cores}"])
-            else:
-                run(["cmake", "--build", ".", "--", f"-j{max_cores}"])
-
-        else:
-            print(f"⚠️ Unknown system {system}, using cmake --build")
-            run(["cmake", "--build", ".", "--", f"-j{max_cores}"])
+        if args.cmd == "install":
+            install(args.build_dir, args.prefix, args.config, args.destdir)
 
     except subprocess.CalledProcessError as e:
-        print(f"❌ Build failed with error code {e.returncode}")
+        print(f"❌ Failed with error code {e.returncode}")
         sys.exit(1)
 
-    end_time = time.time()
-    duration = end_time - start_time
-    minutes = int(duration // 60)
-    seconds = duration % 60
-
-    print(f"\n⏱️ Build completed in {minutes}m {seconds:.2f}s ({duration:.2f} seconds total)")
-
-    print("\n✅ Build succeeded!")
+    dur = time.time() - start
+    print(f"\n⏱️ Done in {int(dur//60)}m {dur%60:.2f}s")
+    print("✅ OK")
 
 if __name__ == "__main__":
     main()

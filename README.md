@@ -6,6 +6,86 @@ Designed for simplicity and modularity, Rex provides an easy-to-use API for buil
 
 ---
 
+## Game Project Tree
+
+```
+mygame/
+├── main.lua
+└── assets/
+    ├── player.png
+    ├── jump.wav
+    └── fonts/
+        └── myfont.ttf
+```
+
+---
+
+## Game Run 
+
+```bash
+cd mygame
+rex .
+```
+
+---
+
+## Example main.lua
+
+```lua
+rex.log("Hello Rex!")
+
+player = rex.entity.spawn_player(100, 100)
+
+function update(dt)
+    local vx = 0
+    if rex.input.held(rex.key.A) then vx = -200 end
+    if rex.input.held(rex.key.D) then vx =  200 end
+    rex.entity.set_velocity(player, vx, 0)
+end
+
+function draw()
+    rex.gfx.clear(20, 20, 30)
+    rex.entity.render_all()
+end
+```
+
+---
+
+## Build
+
+### Python Build
+
+1. Build
+
+```bash
+python3 x.py
+```
+
+2. Install
+
+```bash
+sudo python3 x.py install
+```
+
+---
+
+### CMake Build
+
+1. Build
+
+```bash
+cmake -S . -B build
+cmake --build build -j
+```
+
+2. Install
+
+```bash
+sudo cmake --install build
+```
+
+---
+
 ## Example Projects
 
 All sample projects can be found under the [`Examples/`](./Examples) directory:

@@ -17,6 +17,22 @@ bool LuaScene::call(const char* fn, int nargs, int nrets) {
     return true;
 }
 
+bool LuaScene::ensureHudFont(Engine& engine, const std::string& fontPath, int size) {
+    if (hudInited && hudFontPath == fontPath && hudFontSize == size) return true;
+
+    hudText.quit();
+    hudInited = hudText.init(engine.getAssets(), fontPath, size);
+
+    if (hudInited) {
+        hudFontPath = fontPath;
+        hudFontSize = size;
+    } else {
+        hudFontPath.clear();
+        hudFontSize = 0;
+    }
+    return hudInited;
+}
+
 void LuaScene::onEnter(Engine& engine) {
     ctx.engine = &engine;
     ctx.scene = this;
