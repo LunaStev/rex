@@ -1,4 +1,5 @@
-# Rex Framework
+<!-- # ![alt text](.github/REX_LOGO.png) -->
+# ![alt text](.github/REX_LOGO_WHITE.png)
 
 Rex Framework is a lightweight 2D game engine built on top of [SDL2 2.32.10](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.10).
 

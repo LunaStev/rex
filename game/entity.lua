@@ -1,12 +1,12 @@
 player = nil
 
-function on_start()
+function onEnter()
     player = Entity.create()
     player:set_position(100, 100)
     player:set_size(32, 32)
 end
 
-function on_update(dt)
+function update(dt)
     local speed = 200
 
     if Input.is_down("A") then
@@ -17,7 +17,7 @@ function on_update(dt)
     end
 end
 
-function on_draw()
+function render()
     Graphics.clear(0, 0, 0)
     Graphics.rect(player:x(), player:y(), 32, 32)
 end

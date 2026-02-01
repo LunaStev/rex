@@ -1,6 +1,6 @@
 jump = nil
 
-function on_start()
+function onEnter()
     jump = Audio.load("assets/jump.wav")
 end
 

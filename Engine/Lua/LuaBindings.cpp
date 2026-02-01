@@ -107,6 +107,37 @@ static int l_gfx_image(lua_State* L) {
     return 1;
 }
 
+// ---------------- camera ----------------
+static int l_cam_set_position(lua_State* L) {
+    auto* c = must_ctx(L);
+    float x = (float)luaL_checknumber(L, 1);
+    float y = (float)luaL_checknumber(L, 2);
+    c->engine->getGraphics().getCamera().setPosition(x, y);
+    return 0;
+}
+
+static int l_cam_move(lua_State* L) {
+    auto* c = must_ctx(L);
+    float dx = (float)luaL_checknumber(L, 1);
+    float dy = (float)luaL_checknumber(L, 2);
+    c->engine->getGraphics().getCamera().move(dx, dy);
+    return 0;
+}
+
+static int l_cam_set_zoom(lua_State* L) {
+    auto* c = must_ctx(L);
+    float z = (float)luaL_checknumber(L, 1);
+    c->engine->getGraphics().getCamera().setZoom(z);
+    return 0;
+}
+
+static int l_cam_add_zoom(lua_State* L) {
+    auto* c = must_ctx(L);
+    float dz = (float)luaL_checknumber(L, 1);
+    c->engine->getGraphics().getCamera().addZoom(dz);
+    return 0;
+}
+
 // ---------------- world ----------------
 static int l_world_generate_flat(lua_State* L) {
     auto* c = must_ctx(L);
@@ -411,6 +442,14 @@ static int luaopen_rex(lua_State* L) {
     lua_pushcfunction(L, l_gfx_clear); lua_setfield(L, -2, "clear");
     lua_pushcfunction(L, l_gfx_rect);  lua_setfield(L, -2, "rect");
     lua_pushcfunction(L, l_gfx_image); lua_setfield(L, -2, "image");
+    // rex.gfx.camera
+    lua_newtable(L);
+    lua_pushcfunction(L, l_cam_set_position); lua_setfield(L, -2, "set_position");
+    lua_pushcfunction(L, l_cam_move);         lua_setfield(L, -2, "move");
+    lua_pushcfunction(L, l_cam_set_zoom);     lua_setfield(L, -2, "set_zoom");
+    lua_pushcfunction(L, l_cam_add_zoom);     lua_setfield(L, -2, "add_zoom");
+    lua_setfield(L, -2, "camera");
+
     lua_setfield(L, -2, "gfx");
 
     // rex.world
