@@ -37,20 +37,16 @@ int main() {
     scene.addComponent<RigidBodyComponent>(ground, BodyType::Static, 0.0f);
     
     Camera cam;
+    cam.aspect = float(window.getWidth()) / float(window.getHeight());
+    Vec3 camPos{0, 2, -10};
     
     while (!window.shouldClose()) {
         window.pollEvents();
         
         physics.update(scene, 1.0f / 60.0f);
-        
-        glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        
-        // Simple view matrix (static camera)
-        Mat4 view = Mat4::translate(Vec3{0, -2, 0}); 
-        
-        renderer.render(scene, cam, view);
+
+        Mat4 view = Mat4::lookAtLH(camPos, Vec3{0, 0, 0}, Vec3{0, 1, 0});
+        renderer.render(scene, cam, view, camPos, window.getWidth(), window.getHeight(), 0);
         
         window.swapBuffers();
     }

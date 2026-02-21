@@ -24,9 +24,14 @@ struct MeshRenderer {
     Model* model = nullptr;
     Mesh* mesh = nullptr; // Fallback for simple shapes
     Vec3 color{1, 1, 1};
+    float metallic = 0.0f;
+    float roughness = 0.5f;
+    float ao = 1.0f;
 
     MeshRenderer() = default;
     MeshRenderer(Model* mod, Mesh* m, Vec3 col) : model(mod), mesh(m), color(col) {}
+    MeshRenderer(Model* mod, Mesh* m, Vec3 col, float met, float rough, float ambient)
+        : model(mod), mesh(m), color(col), metallic(met), roughness(rough), ao(ambient) {}
 };
 
 struct RigidBodyComponent {
@@ -46,7 +51,7 @@ struct Camera {
     bool isPerspective = true;
 
     Mat4 getProjection() const {
-        if (isPerspective) return Mat4::perspective(fov * 0.0174533f, aspect, nearPlane, farPlane);
+        if (isPerspective) return Mat4::perspectiveLH(fov * 0.0174533f, aspect, nearPlane, farPlane);
         return Mat4::identity();
     }
 };

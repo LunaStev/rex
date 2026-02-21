@@ -12,17 +12,25 @@ using EntityId = uint32_t;
 class ComponentPool {
 public:
     virtual ~ComponentPool() = default;
+    virtual void erase(EntityId id) = 0;
 };
 
 template<typename T>
 class TypedComponentPool : public ComponentPool {
 public:
     std::unordered_map<EntityId, T> components;
+    void erase(EntityId id) override { components.erase(id); }
 };
 
 class Scene {
 public:
     EntityId createEntity() { return m_nextId++; }
+
+    void destroyEntity(EntityId id) {
+        for (auto& [type, pool] : m_pools) {
+            pool->erase(id);
+        }
+    }
     
     template<typename T, typename... Args>
     T& addComponent(EntityId id, Args&&... args) {

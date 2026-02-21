@@ -13,6 +13,7 @@ public:
     void bind() const;
     void unbind() const;
 
+    void setUniform(const std::string& name, int value);
     void setUniform(const std::string& name, float value);
     void setUniform(const std::string& name, const Vec3& value);
     void setUniform(const std::string& name, const Mat4& value);
