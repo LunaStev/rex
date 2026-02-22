@@ -8,12 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(OpenGL REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED sdl2)
-
-# Qt6 for Editor
-find_package(Qt6 REQUIRED COMPONENTS Widgets OpenGLWidgets)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
+find_package(Freetype REQUIRED)
 
 # Internal Includes
 include_directories(
@@ -27,25 +22,19 @@ file(GLOB_RECURSE ENGINE_SOURCES
     Engine/Core/*.cpp 
     Engine/Graphics/*.cpp
     Engine/Physics/*.cpp
+    Engine/UI/*.cpp
 )
 
 add_library(rex_core STATIC ${ENGINE_SOURCES})
-target_link_libraries(rex_core 
+target_link_libraries(rex_core
     ${SDL2_LIBRARIES} 
     ${OPENGL_LIBRARIES}
+    Freetype::Freetype
 )
 
-# Editor (Qt6 based)
-file(GLOB_RECURSE EDITOR_SOURCES Engine/Editor/*.cpp)
-add_executable(rex-editor 
-    ${EDITOR_SOURCES} 
-    Engine/Launcher/editor_main.cpp
-)
-target_link_libraries(rex-editor 
-    rex_core 
-    Qt6::Widgets 
-    Qt6::OpenGLWidgets
-)
+# Editor (RexUI + SDL + OpenGL)
+add_executable(rex-editor Engine/EditorRex/rexui_main.cpp)
+target_link_libraries(rex-editor rex_core)
 
 # Runtime
 add_executable(rex-runtime Engine/Runtime/runtime_main.cpp)

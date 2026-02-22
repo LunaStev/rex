@@ -14,7 +14,9 @@ struct Transform {
 
     Mat4 getMatrix() const {
         Mat4 m = Mat4::translate(position);
+        m = m * Mat4::rotateX(rotation.x * 0.0174533f);
         m = m * Mat4::rotateY(rotation.y * 0.0174533f);
+        m = m * Mat4::rotateZ(rotation.z * 0.0174533f);
         m = m * Mat4::scale(scale);
         return m;
     }
@@ -38,7 +40,13 @@ struct RigidBodyComponent {
     BodyType type = BodyType::Dynamic;
     float mass = 1.0f;
     float restitution = 0.5f;
+    float staticFriction = 0.6f;
+    float dynamicFriction = 0.45f;
+    float linearDamping = 0.02f;
+    float angularDamping = 0.04f;
+    bool enableCCD = true;
     Vec3 velocity{0,0,0};
+    Vec3 angularVelocity{0,0,0}; // radians/sec
     
     RigidBody* internalBody = nullptr;
 };

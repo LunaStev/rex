@@ -25,6 +25,11 @@ typedef void (APIENTRYP PFNGLACTIVETEXTUREPROC)(GLenum texture);
 #ifndef PFNGLDELETETEXTURESPROC
 typedef void (APIENTRYP PFNGLDELETETEXTURESPROC)(GLsizei n, const GLuint* textures);
 #endif
+#ifndef PFNGLTEXSUBIMAGE2DPROC
+typedef void (APIENTRYP PFNGLTEXSUBIMAGE2DPROC)(
+    GLenum target, GLint level, GLint xoffset, GLint yoffset,
+    GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels);
+#endif
 #ifndef PFNGLGENFRAMEBUFFERSPROC
 typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSPROC)(GLsizei n, GLuint* ids);
 #endif
@@ -105,6 +110,7 @@ namespace rex::gl::internal {
         X(PFNGLTEXPARAMETERIPROC, TexParameteri) \
         X(PFNGLACTIVETEXTUREPROC, ActiveTexture) \
         X(PFNGLDELETETEXTURESPROC, DeleteTextures) \
+        X(PFNGLTEXSUBIMAGE2DPROC, TexSubImage2D) \
         X(PFNGLGENFRAMEBUFFERSPROC, GenFramebuffers) \
         X(PFNGLBINDFRAMEBUFFERPROC, BindFramebuffer) \
         X(PFNGLFRAMEBUFFERTEXTURE2DPROC, FramebufferTexture2D) \
@@ -158,6 +164,7 @@ namespace rex::gl::internal {
 #define glTexParameteri ::rex::gl::internal::ptr_TexParameteri
 #define glActiveTexture ::rex::gl::internal::ptr_ActiveTexture
 #define glDeleteTextures ::rex::gl::internal::ptr_DeleteTextures
+#define glTexSubImage2D ::rex::gl::internal::ptr_TexSubImage2D
 #define glGenFramebuffers ::rex::gl::internal::ptr_GenFramebuffers
 #define glBindFramebuffer ::rex::gl::internal::ptr_BindFramebuffer
 #define glFramebufferTexture2D ::rex::gl::internal::ptr_FramebufferTexture2D

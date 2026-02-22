@@ -35,6 +35,7 @@
 #undef glTexParameteri
 #undef glActiveTexture
 #undef glDeleteTextures
+#undef glTexSubImage2D
 #undef glGenFramebuffers
 #undef glBindFramebuffer
 #undef glFramebufferTexture2D
