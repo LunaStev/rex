@@ -27,7 +27,14 @@ This repository is maintained as internal+external developer documentation and s
   - `Engine/Graphics/HDR`
   - `Engine/Graphics/Culling`
 - Rust physics integration through `PhysicsSystem` and FFI bridge
-- Qt-free editor path (`rex-editor`) and runtime sandbox (`rex-runtime`)
+- RexUI framework-first editor path (`rex-editor`) and runtime sandbox (`rex-runtime`)
+- Legacy editor remains available as `rex-editor-legacy`
+- RexUI next-path renderer backends:
+  - OpenGL backend
+  - Vulkan backend
+  - `RexGraphics` backend foundation (command-stream API + device abstraction)
+- Legacy-independent RexUI demo/editor path is now the default `rex-editor`
+- Integrated editor platform module skeleton under `Engine/Editor/` (core/panels/tools/assets/plugin)
 
 ## Requirements
 - C++20 compiler
@@ -55,6 +62,7 @@ Other useful commands:
 python3 x.py configure
 python3 x.py build
 python3 x.py run editor
+python3 x.py run editor-legacy
 python3 x.py run runtime
 python3 x.py clean
 ```
@@ -62,6 +70,7 @@ python3 x.py clean
 ## Run
 ```bash
 ./build/rex-editor
+./build/rex-editor-legacy
 ./build/rex-runtime
 ```
 
@@ -103,7 +112,7 @@ Engine/
   Graphics/    # modular rendering framework + renderer facade
   Physics/     # C++ bridge layer over Rust physics core
   Rust/        # Rust physics crates
-  UI/          # RexUI legacy + next-gen framework skeleton
+  UI/          # RexUI legacy + next-gen framework + RexGraphics backend
   EditorRex/   # editor entry
   Runtime/     # runtime sandbox entry
 docs/
@@ -121,6 +130,7 @@ Start with:
 - `docs/english/input.md`
 - `docs/english/world.md`
 - `docs/english/roadmap.md`
+- `docs/english/editor_integrated_production_environment.md`
 
 Korean set mirrors this under `docs/korean/`.
 

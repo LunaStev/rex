@@ -15,6 +15,11 @@ public:
     bool wrapping() const;
 
     core::Size measure(const core::LayoutConstraints& constraints, const core::EventContext& ctx) const override;
+    void paint(core::PaintContext& ctx) const override;
+
+private:
+    std::string text_;
+    bool wrapping_ = false;
 };
 
 // TODO [RexUI-Widgets-Basic-003]:

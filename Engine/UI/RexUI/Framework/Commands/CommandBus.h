@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <unordered_map>
 
 #include "UICommand.h"
 
@@ -23,6 +24,11 @@ public:
 
     ListenerId addListener(Listener listener);
     void removeListener(ListenerId id);
+
+private:
+    UndoRedoStack* stack_ = nullptr;
+    ListenerId nextListenerId_ = 1;
+    std::unordered_map<ListenerId, Listener> listeners_;
 };
 
 // TODO [RexUI-Framework-Commands-003]:

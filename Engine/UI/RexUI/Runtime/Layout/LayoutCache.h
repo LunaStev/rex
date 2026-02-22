@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <unordered_map>
 
 #include "../../Core/ElementId.h"
 #include "../../Core/Geometry.h"
@@ -27,6 +28,12 @@ public:
     std::optional<core::LayoutResult> find(const LayoutCacheKey& key) const;
     void store(const LayoutCacheEntry& entry);
     void clear();
+
+private:
+    static std::uint64_t makeKeyHash(const LayoutCacheKey& key);
+
+    std::uint64_t frameStamp_ = 0;
+    std::unordered_map<std::uint64_t, LayoutCacheEntry> entries_;
 };
 
 // TODO [RexUI-Runtime-Layout-002]:

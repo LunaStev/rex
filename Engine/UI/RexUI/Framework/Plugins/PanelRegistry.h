@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <string>
 
 namespace rex::ui::framework::plugins {
@@ -17,6 +18,9 @@ public:
     void unregisterPanel(const std::string& panelId);
     bool hasPanel(const std::string& panelId) const;
     PanelDescriptor getPanel(const std::string& panelId) const;
+
+private:
+    std::unordered_map<std::string, PanelDescriptor> panels_;
 };
 
 // TODO [RexUI-Framework-Plugins-002]:

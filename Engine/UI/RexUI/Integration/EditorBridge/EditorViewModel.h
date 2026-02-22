@@ -24,6 +24,11 @@ public:
     void bindHierarchy();
     void bindInspector();
     void bindToolbar();
+
+private:
+    framework::state::UIStateStore* stateStore_ = nullptr;
+    framework::binding::BindingEngine* bindingEngine_ = nullptr;
+    framework::binding::BindingContext* bindingContext_ = nullptr;
 };
 
 // TODO [RexUI-Integration-002]:

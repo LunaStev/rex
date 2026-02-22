@@ -1,17 +1,18 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "ElementId.h"
 #include "Event.h"
 #include "Geometry.h"
+#include "PaintContext.h"
 #include "StyleValue.h"
 
 namespace rex::ui::core {
-
-class PaintContext;
 
 class Widget : public std::enable_shared_from_this<Widget> {
 public:
@@ -37,6 +38,7 @@ public:
     const std::string& styleClass() const;
 
     void resolveStyle(const StyleResolver& resolver, WidgetStateFlag state);
+    std::optional<StyleValue> styleValue(const std::string& token) const;
 
 protected:
     virtual void onStyleResolved();
@@ -47,6 +49,7 @@ private:
     std::vector<std::shared_ptr<Widget>> children_;
     Rect arrangedRect_{};
     std::string styleClass_;
+    std::unordered_map<std::string, StyleValue> resolvedStyleValues_;
 };
 
 // TODO [RexUI-Core-005]:

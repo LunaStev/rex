@@ -15,7 +15,14 @@ public:
     const std::string& text() const;
 
     void setOnClick(ClickHandler handler);
+    core::Size measure(const core::LayoutConstraints& constraints, const core::EventContext& ctx) const override;
+    void paint(core::PaintContext& ctx) const override;
     bool handleEvent(core::EventContext& ctx, core::RoutedEvent& event) override;
+
+private:
+    std::string text_;
+    ClickHandler onClick_{};
+    bool pressed_ = false;
 };
 
 // TODO [RexUI-Widgets-Basic-002]:

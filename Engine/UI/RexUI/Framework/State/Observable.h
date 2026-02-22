@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <unordered_map>
+#include <utility>
 
 namespace rex::ui::framework::state {
 
@@ -19,6 +21,11 @@ public:
 
     SubscriptionId subscribe(Callback callback);
     void unsubscribe(SubscriptionId id);
+
+private:
+    TValue value_{};
+    SubscriptionId nextSubscriptionId_ = 1;
+    std::unordered_map<SubscriptionId, Callback> subscribers_;
 };
 
 // TODO [RexUI-Framework-State-001]:
@@ -36,5 +43,42 @@ public:
 // 테스트 전략:
 //  - 구독/해지/중첩 알림 테스트
 //  - 경쟁 조건 시나리오 테스트
+
+template <typename TValue>
+Observable<TValue>::Observable() = default;
+
+template <typename TValue>
+Observable<TValue>::Observable(TValue initialValue)
+    : value_(std::move(initialValue)) {}
+
+template <typename TValue>
+const TValue& Observable<TValue>::value() const {
+    return value_;
+}
+
+template <typename TValue>
+void Observable<TValue>::setValue(const TValue& nextValue) {
+    if constexpr (requires (const TValue& a, const TValue& b) { a == b; }) {
+        if (value_ == nextValue) return;
+    }
+
+    value_ = nextValue;
+    for (const auto& [id, cb] : subscribers_) {
+        (void)id;
+        if (cb) cb(value_);
+    }
+}
+
+template <typename TValue>
+typename Observable<TValue>::SubscriptionId Observable<TValue>::subscribe(Callback callback) {
+    const SubscriptionId id = nextSubscriptionId_++;
+    subscribers_[id] = std::move(callback);
+    return id;
+}
+
+template <typename TValue>
+void Observable<TValue>::unsubscribe(SubscriptionId id) {
+    subscribers_.erase(id);
+}
 
 } // namespace rex::ui::framework::state

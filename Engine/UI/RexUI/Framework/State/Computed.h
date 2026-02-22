@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <optional>
+#include <utility>
 
 namespace rex::ui::framework::state {
 
@@ -15,6 +17,12 @@ public:
     const TValue& value() const;
     void invalidate();
     void recompute();
+
+private:
+    mutable std::optional<TValue> cached_;
+    mutable bool dirty_ = true;
+    mutable bool computing_ = false;
+    ComputeFn fn_;
 };
 
 // TODO [RexUI-Framework-State-002]:
@@ -32,5 +40,38 @@ public:
 // 테스트 전략:
 //  - 파생 상태 체인 정확성 테스트
 //  - 순환 의존 오류 테스트
+
+template <typename TValue>
+Computed<TValue>::Computed() = default;
+
+template <typename TValue>
+Computed<TValue>::Computed(ComputeFn fn)
+    : fn_(std::move(fn)) {}
+
+template <typename TValue>
+const TValue& Computed<TValue>::value() const {
+    if (dirty_) {
+        recompute();
+    }
+    if (!cached_.has_value()) {
+        static TValue fallback{};
+        return fallback;
+    }
+    return *cached_;
+}
+
+template <typename TValue>
+void Computed<TValue>::invalidate() {
+    dirty_ = true;
+}
+
+template <typename TValue>
+void Computed<TValue>::recompute() {
+    if (!fn_ || computing_) return;
+    computing_ = true;
+    cached_ = fn_();
+    dirty_ = false;
+    computing_ = false;
+}
 
 } // namespace rex::ui::framework::state

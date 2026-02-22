@@ -54,6 +54,7 @@ add_dependencies(rust_physics_core rust_physics_core_build)
 # Core Engine Library (including Physics & Graphics)
 file(GLOB_RECURSE ENGINE_SOURCES 
     Engine/Core/*.cpp 
+    Engine/Editor/*.cpp
     Engine/Graphics/*.cpp
     Engine/Physics/*.cpp
     Engine/UI/*.cpp
@@ -71,9 +72,13 @@ if(UNIX)
     target_link_libraries(rex_core dl pthread m)
 endif()
 
-# Editor (RexUI + SDL + OpenGL)
-add_executable(rex-editor Engine/EditorRex/rexui_main.cpp)
+# Editor (RexUI Framework + RexGraphics backend)
+add_executable(rex-editor Engine/EditorRex/rexui_next_main.cpp)
 target_link_libraries(rex-editor rex_core)
+
+# Legacy Editor (old RexUI path)
+add_executable(rex-editor-legacy Engine/EditorRex/rexui_main.cpp)
+target_link_libraries(rex-editor-legacy rex_core)
 
 # Runtime
 add_executable(rex-runtime Engine/Runtime/runtime_main.cpp)

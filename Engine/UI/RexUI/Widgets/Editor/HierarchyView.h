@@ -25,6 +25,12 @@ public:
     void setOnSelect(SelectHandler handler);
 
     std::uint64_t selectedNode() const;
+
+private:
+    std::vector<HierarchyNode> nodes_;
+    std::string filterText_;
+    SelectHandler onSelect_{};
+    std::uint64_t selectedNode_ = 0;
 };
 
 // TODO [RexUI-Widgets-Editor-001]:

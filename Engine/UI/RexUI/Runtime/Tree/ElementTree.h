@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 #include "../../Core/ElementId.h"
@@ -28,6 +29,10 @@ public:
     void erase(core::ElementId id);
 
     const std::vector<ElementRecord>& records() const;
+
+private:
+    std::vector<ElementRecord> records_;
+    std::unordered_map<core::ElementId, std::size_t> indexById_;
 };
 
 // TODO [RexUI-Runtime-Tree-001]:

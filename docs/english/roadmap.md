@@ -17,6 +17,8 @@
 - Qt removal completed
 - SDL + RexUI editor path stabilized
 - next-gen industrial RexUI architecture skeleton fixed (design-first)
+- integrated editor platform skeleton added under `Engine/Editor/`
+- AAA editor architecture spec added: `docs/english/editor_integrated_production_environment.md`
 
 ## 2. Near-Term (Graphics)
 ### Goal
@@ -61,7 +63,23 @@ Move from architecture skeleton to production-capable framework modules.
 - stable editor interaction on large scenes
 - deterministic UI state transitions under undo/redo
 
-## 5. Internal Quality Targets
+## 5. Editor Platform Track
+### Goal
+Move from demo/editor shell to production-grade integrated authoring environment.
+
+### Work
+- Editor Application/Framework/Tool layering hardening
+- Viewport/Outliner/Details/Content Browser full workflow integration
+- Transaction + Selection + Command-only mutation path
+- Plugin module loading for custom panels/tools/inspectors/commands
+- async asset pipeline + thumbnail background workers
+
+### Exit Criteria
+- end-to-end scene authoring flow is stable
+- docking layouts persist reliably
+- large hierarchy/assets remain responsive
+
+## 6. Internal Quality Targets
 - build and run checks remain green on every major subsystem update
 - docs stay synchronized with implementation
 - performance-sensitive paths always have measurable counters

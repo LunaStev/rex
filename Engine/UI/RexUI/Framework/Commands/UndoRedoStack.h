@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 #include "UICommand.h"
 
@@ -19,6 +20,11 @@ public:
     std::shared_ptr<UICommand> popUndo();
     std::shared_ptr<UICommand> popRedo();
     void clear();
+
+private:
+    std::size_t capacity_ = 256;
+    std::vector<std::shared_ptr<UICommand>> undo_;
+    std::vector<std::shared_ptr<UICommand>> redo_;
 };
 
 // TODO [RexUI-Framework-Commands-002]:

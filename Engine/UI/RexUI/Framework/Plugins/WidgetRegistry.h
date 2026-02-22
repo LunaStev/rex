@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 namespace rex::ui::core {
 class Widget;
@@ -19,6 +20,9 @@ public:
 
     std::shared_ptr<core::Widget> create(const std::string& widgetType) const;
     bool contains(const std::string& widgetType) const;
+
+private:
+    std::unordered_map<std::string, Factory> factories_;
 };
 
 // TODO [RexUI-Framework-Plugins-001]:

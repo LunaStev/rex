@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <functional>
+#include <unordered_map>
+#include <unordered_set>
 #include <optional>
 #include <string>
 #include <variant>
@@ -27,6 +29,22 @@ public:
 
     void beginBatch();
     void endBatch();
+
+private:
+    struct Subscription {
+        StatePath pathPrefix;
+        Callback callback;
+    };
+
+    void notifyPath(const StatePath& path, const StateValue& value);
+    static bool pathMatchesPrefix(const StatePath& path, const StatePath& prefix);
+
+    std::unordered_map<StatePath, StateValue> values_;
+    std::unordered_map<SubscriptionId, Subscription> subscriptions_;
+    SubscriptionId nextSubscriptionId_ = 1;
+
+    bool batching_ = false;
+    std::unordered_set<StatePath> batchedDirtyPaths_;
 };
 
 // TODO [RexUI-Framework-State-003]:

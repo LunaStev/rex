@@ -104,7 +104,12 @@ def _rebuild(args: argparse.Namespace) -> None:
 
 def _run_binary(args: argparse.Namespace) -> None:
     build_dir = _resolve_path(args.project_root, args.build_dir)
-    target_name = "rex-editor" if args.run_target == "editor" else "rex-runtime"
+    if args.run_target == "editor":
+        target_name = "rex-editor"
+    elif args.run_target == "editor-legacy":
+        target_name = "rex-editor-legacy"
+    else:
+        target_name = "rex-runtime"
     binary = build_dir / target_name
     if sys.platform == "win32":
         binary = binary.with_suffix(".exe")
@@ -143,7 +148,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "run_target",
         nargs="?",
-        choices=["editor", "runtime"],
+        choices=["editor", "editor-legacy", "runtime"],
         help="Binary to run when command is `run`",
     )
     parser.add_argument(

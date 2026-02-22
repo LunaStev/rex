@@ -9,6 +9,7 @@
 - 렌더링: 모듈형 Deferred 파이프라인(PBR, CSM 그림자, HDR, SSAO, Bloom, ACES 톤매핑)
 - 물리: Rust 강체 코어 + C++ 브리지(`PhysicsSystem`)
 - UI/에디터: SDL + RexUI(`rex-editor`), Qt 제거 완료
+- 에디터 아키텍처: `Engine/Editor/`에 AAA급 통합 제작 환경 골격 추가
 
 ## 2. 저장소 구조
 ```text
@@ -18,6 +19,7 @@ Engine/
   Physics/     # Rust 물리 코어용 C++ 브리지
   Rust/        # Rust 크레이트(물리 코어)
   UI/          # Legacy RexUI + 차세대 프레임워크 스켈레톤
+  Editor/      # 통합 에디터 플랫폼 모듈(core/panels/tools/asset/plugin)
   EditorRex/   # 에디터 엔트리
   Runtime/     # 런타임 샌드박스 엔트리
 docs/
@@ -36,12 +38,14 @@ python3 x.py
 python3 x.py configure
 python3 x.py build
 python3 x.py run editor
+python3 x.py run editor-legacy
 python3 x.py run runtime
 ```
 
 ### 3.3 직접 실행
 ```bash
 ./build/rex-editor
+./build/rex-editor-legacy
 ./build/rex-runtime
 ```
 
@@ -72,3 +76,4 @@ python3 x.py run runtime
 - ECS/컴포넌트: `docs/korean/core.md`, `docs/korean/entity.md`
 - 런타임 월드 흐름: `docs/korean/world.md`
 - 중장기 계획: `docs/korean/roadmap.md`
+- AAA 에디터 설계서: `docs/korean/editor_integrated_production_environment.md`

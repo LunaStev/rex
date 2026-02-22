@@ -19,4 +19,21 @@ namespace rex::ui::renderer::vulkan {
 //  - 렌더 일치성 테스트(GL 대비)
 //  - GPU validation layer 테스트
 
+RexUIRendererVK::RexUIRendererVK(IRenderDevice* device)
+    : device_(device) {}
+
+bool RexUIRendererVK::beginFrame(const RenderFrameContext& context) {
+    (void)context;
+    return true;
+}
+
+bool RexUIRendererVK::submit(const runtime::render::DrawList& drawList) {
+    (void)drawList;
+    return device_ != nullptr;
+}
+
+bool RexUIRendererVK::endFrame() {
+    return true;
+}
+
 } // namespace rex::ui::renderer::vulkan

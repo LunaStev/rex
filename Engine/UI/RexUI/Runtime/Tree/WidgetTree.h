@@ -1,7 +1,9 @@
 #pragma once
 
+#include <unordered_map>
 #include <memory>
 
+#include "../../Core/ElementId.h"
 #include "../../Core/Widget.h"
 #include "ElementTree.h"
 
@@ -23,6 +25,8 @@ public:
 private:
     WidgetPtr root_;
     ElementTree elementTree_;
+    core::ElementIdGenerator idGenerator_{};
+    std::unordered_map<core::ElementId, core::Widget*> widgetIndex_;
 };
 
 // TODO [RexUI-Runtime-Tree-002]:

@@ -19,4 +19,21 @@ namespace rex::ui::renderer::opengl {
 //  - 프레임 렌더 정합성 테스트
 //  - 성능 벤치마크(명령 수별 FPS)
 
+RexUIRendererGL::RexUIRendererGL(IRenderDevice* device)
+    : device_(device) {}
+
+bool RexUIRendererGL::beginFrame(const RenderFrameContext& context) {
+    (void)context;
+    return true;
+}
+
+bool RexUIRendererGL::submit(const runtime::render::DrawList& drawList) {
+    (void)drawList;
+    return device_ != nullptr;
+}
+
+bool RexUIRendererGL::endFrame() {
+    return true;
+}
+
 } // namespace rex::ui::renderer::opengl

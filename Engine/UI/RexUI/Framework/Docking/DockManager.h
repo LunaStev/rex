@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
 #include <string>
 
 #include "DockNode.h"
@@ -21,6 +23,24 @@ public:
 
     bool split(DockNodeId node, DockSplitDirection direction, float ratio);
     bool merge(DockNodeId node);
+
+    const DockNode* findNode(DockNodeId id) const;
+    const std::unordered_map<DockNodeId, DockNode>& nodes() const;
+
+    const std::unordered_map<DockPanelId, std::string>& panels() const;
+
+private:
+    friend class DockSerializer;
+
+    DockNodeId createNode(DockNodeType type, DockNodeId parentId);
+    void removePanelFromNode(DockNode& node, DockPanelId panelId);
+
+    DockNodeId root_ = 0;
+    DockNodeId nextNodeId_ = 1;
+    DockPanelId nextPanelId_ = 1;
+
+    std::unordered_map<DockNodeId, DockNode> nodes_;
+    std::unordered_map<DockPanelId, std::string> panels_;
 };
 
 // TODO [RexUI-Framework-Docking-002]:

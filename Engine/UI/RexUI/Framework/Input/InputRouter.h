@@ -21,6 +21,10 @@ public:
 
     bool routeToWidgetTree(core::Widget* root, const InputEvent& event);
     bool routeToAction(const InputEvent& event, std::string& outActionName);
+
+private:
+    InputMap* map_ = nullptr;
+    std::string activeContext_ = "Default";
 };
 
 // TODO [RexUI-Framework-Input-003]:

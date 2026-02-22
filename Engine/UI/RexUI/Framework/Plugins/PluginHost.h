@@ -2,11 +2,12 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
+
+#include "PanelRegistry.h"
+#include "WidgetRegistry.h"
 
 namespace rex::ui::framework::plugins {
-
-class WidgetRegistry;
-class PanelRegistry;
 
 class IUIPlugin {
 public:
@@ -22,6 +23,14 @@ public:
     bool load(const std::shared_ptr<IUIPlugin>& plugin);
     bool unload(const std::string& pluginName);
     bool isLoaded(const std::string& pluginName) const;
+
+    WidgetRegistry& widgetRegistry();
+    PanelRegistry& panelRegistry();
+
+private:
+    WidgetRegistry widgetRegistry_{};
+    PanelRegistry panelRegistry_{};
+    std::unordered_map<std::string, std::shared_ptr<IUIPlugin>> loadedPlugins_;
 };
 
 // TODO [RexUI-Framework-Plugins-003]:

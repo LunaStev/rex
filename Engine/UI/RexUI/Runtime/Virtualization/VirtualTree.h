@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
 
 namespace rex::ui::runtime::virtualization {
 
@@ -12,6 +13,11 @@ public:
     void setViewport(float offset, float extent);
     std::uint64_t firstVisibleNode() const;
     std::uint64_t visibleNodeCount() const;
+
+private:
+    std::unordered_map<std::uint64_t, bool> expanded_;
+    float viewportOffset_ = 0.0f;
+    float viewportExtent_ = 0.0f;
 };
 
 // TODO [RexUI-Runtime-Virtualization-002]:

@@ -10,6 +10,9 @@ public:
     void addDrawList(const DrawList& drawList);
     const DrawList& flattened() const;
     void clear();
+
+private:
+    DrawList flattened_;
 };
 
 // TODO [RexUI-Runtime-Render-003]:

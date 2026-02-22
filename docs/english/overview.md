@@ -9,6 +9,7 @@ This documentation set targets both:
 - Rendering: modular Deferred pipeline (PBR, CSM shadows, HDR, SSAO, Bloom, ACES tone mapping)
 - Physics: Rust rigid-body core + C++ bridge (`PhysicsSystem`)
 - UI/editor: SDL + RexUI (`rex-editor`), Qt removed
+- editor architecture: AAA-grade integrated production environment skeleton in `Engine/Editor/`
 
 ## 2. Repository Layout
 ```text
@@ -18,6 +19,7 @@ Engine/
   Physics/     # C++ bridge layer for Rust physics
   Rust/        # Rust crates (physics core)
   UI/          # legacy RexUI + next-gen framework skeleton
+  Editor/      # integrated editor platform modules (core/panels/tools/asset/plugin)
   EditorRex/   # editor entry point
   Runtime/     # runtime sandbox entry point
 docs/
@@ -36,12 +38,14 @@ python3 x.py
 python3 x.py configure
 python3 x.py build
 python3 x.py run editor
+python3 x.py run editor-legacy
 python3 x.py run runtime
 ```
 
 ### 3.3 Direct execution
 ```bash
 ./build/rex-editor
+./build/rex-editor-legacy
 ./build/rex-runtime
 ```
 
@@ -72,3 +76,4 @@ It demonstrates:
 - ECS and components: `docs/english/core.md`, `docs/english/entity.md`
 - runtime/world flow: `docs/english/world.md`
 - near/far plans: `docs/english/roadmap.md`
+- AAA editor architecture: `docs/english/editor_integrated_production_environment.md`

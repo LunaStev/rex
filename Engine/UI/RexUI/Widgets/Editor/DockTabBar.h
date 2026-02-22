@@ -25,6 +25,12 @@ public:
 
     void setOnActivate(ActivateHandler handler);
     void setOnClose(CloseHandler handler);
+
+private:
+    std::vector<DockTabItem> tabs_;
+    std::uint64_t activeTab_ = 0;
+    ActivateHandler onActivate_{};
+    CloseHandler onClose_{};
 };
 
 // TODO [RexUI-Widgets-Editor-003]:

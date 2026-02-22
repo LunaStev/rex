@@ -23,6 +23,10 @@ public:
 
     void addTrack(const TimelineTrack& track);
     const std::vector<TimelineTrack>& tracks() const;
+
+private:
+    float duration_ = 0.0f;
+    std::vector<TimelineTrack> tracks_;
 };
 
 class TimelinePlayer {
@@ -35,6 +39,11 @@ public:
 
     bool isPlaying() const;
     float currentTime() const;
+
+private:
+    const Timeline* timeline_ = nullptr;
+    bool playing_ = false;
+    float currentTime_ = 0.0f;
 };
 
 // TODO [RexUI-Framework-Animation-002]:

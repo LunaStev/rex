@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
 #include <string>
 
 #include "InputEvent.h"
@@ -12,6 +14,14 @@ public:
     void unbindAction(const std::string& context, const std::string& actionName);
 
     bool resolveAction(const std::string& context, const InputEvent& event, std::string& outActionName) const;
+
+private:
+    struct ActionBinding {
+        std::string actionName;
+        InputEvent trigger{};
+    };
+
+    std::unordered_map<std::string, std::vector<ActionBinding>> bindingsByContext_;
 };
 
 // TODO [RexUI-Framework-Input-002]:

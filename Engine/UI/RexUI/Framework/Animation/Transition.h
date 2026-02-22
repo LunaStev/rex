@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
 #include <string>
 
 #include "Easing.h"
@@ -18,6 +20,16 @@ public:
     void setTransition(const std::string& widgetType, const TransitionSpec& spec);
     bool start(const std::string& widgetType, const std::string& from, const std::string& to);
     void tick(float dt);
+
+private:
+    struct ActiveTransition {
+        std::string widgetType;
+        TransitionSpec spec{};
+        float elapsed = 0.0f;
+    };
+
+    std::unordered_map<std::string, std::vector<TransitionSpec>> transitionSpecs_;
+    std::vector<ActiveTransition> activeTransitions_;
 };
 
 // TODO [RexUI-Framework-Animation-003]:

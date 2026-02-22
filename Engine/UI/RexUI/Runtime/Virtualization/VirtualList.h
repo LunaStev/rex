@@ -12,6 +12,12 @@ public:
 
     std::uint64_t firstVisibleIndex() const;
     std::uint64_t visibleCount() const;
+
+private:
+    std::uint64_t itemCount_ = 0;
+    float itemExtent_ = 1.0f;
+    float viewportOffset_ = 0.0f;
+    float viewportExtent_ = 0.0f;
 };
 
 // TODO [RexUI-Runtime-Virtualization-001]:

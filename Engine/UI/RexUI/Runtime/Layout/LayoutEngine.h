@@ -16,6 +16,10 @@ public:
     LayoutEngine(ConstraintSolver* solver, LayoutCache* cache);
 
     void compute(tree::WidgetTree& tree, const core::LayoutConstraints& rootConstraints, std::uint64_t frameStamp);
+
+private:
+    ConstraintSolver* solver_ = nullptr;
+    LayoutCache* cache_ = nullptr;
 };
 
 // TODO [RexUI-Runtime-Layout-003]:

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
 
 #include "BindingExpression.h"
 
@@ -34,6 +35,16 @@ public:
     void unbind(BindingId id, BindingContext& context);
     void evaluate(BindingContext& context);
     void flush(BindingContext& context);
+
+private:
+    struct BindingRecord {
+        core::Widget* widget = nullptr;
+        BindingExpression expression{};
+        std::uint64_t stateSubscriptionId = 0;
+    };
+
+    BindingId nextBindingId_ = 1;
+    std::unordered_map<BindingId, BindingRecord> bindings_;
 };
 
 // TODO [RexUI-Framework-Binding-002]:

@@ -14,6 +14,11 @@ class PanelWidget : public core::Widget {
 public:
     void setOrientation(PanelOrientation orientation);
     PanelOrientation orientation() const;
+
+    void arrange(const core::Rect& finalRect) override;
+
+private:
+    PanelOrientation orientation_ = PanelOrientation::Vertical;
 };
 
 // TODO [RexUI-Widgets-Basic-001]:

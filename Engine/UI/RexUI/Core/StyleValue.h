@@ -23,6 +23,25 @@ enum class WidgetStateFlag : std::uint32_t {
     Error = 1u << 5
 };
 
+inline WidgetStateFlag operator|(WidgetStateFlag a, WidgetStateFlag b) {
+    return static_cast<WidgetStateFlag>(
+        static_cast<std::uint32_t>(a) | static_cast<std::uint32_t>(b));
+}
+
+inline WidgetStateFlag operator&(WidgetStateFlag a, WidgetStateFlag b) {
+    return static_cast<WidgetStateFlag>(
+        static_cast<std::uint32_t>(a) & static_cast<std::uint32_t>(b));
+}
+
+inline WidgetStateFlag& operator|=(WidgetStateFlag& a, WidgetStateFlag b) {
+    a = a | b;
+    return a;
+}
+
+inline bool hasFlag(WidgetStateFlag value, WidgetStateFlag flag) {
+    return static_cast<std::uint32_t>(value & flag) != 0u;
+}
+
 struct Color {
     float r = 1.0f;
     float g = 1.0f;

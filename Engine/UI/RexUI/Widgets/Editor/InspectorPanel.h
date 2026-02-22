@@ -20,6 +20,10 @@ public:
 
     void setFields(std::vector<InspectorField> fields);
     void setOnCommit(CommitHandler handler);
+
+private:
+    std::vector<InspectorField> fields_;
+    CommitHandler onCommit_{};
 };
 
 // TODO [RexUI-Widgets-Editor-002]:
