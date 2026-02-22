@@ -1,65 +1,67 @@
 # Rex Engine Roadmap (Internal + External)
 
-## 1. Completed
-### Engine
-- ECS baseline
-- OpenGL renderer
-- physics upgrades (Quat, CCD, Dynamic AABB Tree, 2~4 manifold)
+## 1. Recently Completed
+### Rendering
+- Deferred pipeline migration
+- Render-graph style pass sequencing
+- PBR Cook-Torrance shading path
+- Cascaded directional shadow atlas path
+- HDR + SSAO + Bloom + ACES tone mapping chain
+- runtime stress scene integration (`Engine/Runtime/runtime_main.cpp`)
 
-### Editor
-- Qt removed
-- SDL + RexUI editor migration completed
+### Physics
+- Rust physics core integration through C++ bridge
+- quaternion dynamics and constraint flow active through runtime path
 
-### UI framework
-- industrial RexUI skeleton created (Design Freeze + Interface-first)
+### Editor/UI
+- Qt removal completed
+- SDL + RexUI editor path stabilized
+- next-gen industrial RexUI architecture skeleton fixed (design-first)
 
-## 2. Short-term (Phase A/B)
+## 2. Near-Term (Graphics)
 ### Goal
-- deliver minimal next-gen RexUI runtime loop
+Close quality/performance gaps after deferred migration.
 
 ### Work
-- implement Core geometry/widget interfaces
-- implement WidgetTree MVP
-- implement base LayoutEngine/EventRouter
+- Forward+ tile/cluster light culling
+- better render-target aliasing/reuse in render graph
+- improved cascade stability (texel snapping and split tuning)
+- optional soft shadow quality tiers
 
-### Exit criteria
-- basic widget tree render + event propagation works
-- minimal unit tests pass
+### Exit Criteria
+- stable frame time with large light counts
+- reduced shadow shimmering in camera motion
+- no major visual regression from current deferred path
 
-## 3. Mid-term (Phase C/D)
+## 3. Mid-Term (Graphics + Runtime)
 ### Goal
-- establish state-driven UI pipeline
+Complete physically-based environment pipeline and improve cinematic quality.
 
 ### Work
-- UIStateStore + minimal BindingEngine
-- DiffEngine + DrawCommandBuilder
-- production OpenGL backend (`IRenderBackend`)
+- full IBL workflow (irradiance + prefiltered env + BRDF LUT)
+- color grading LUT pipeline
+- optional advanced effects (TAA/DOF/motion blur) with quality gates
+- GPU profiler markers and frame breakdown tooling
 
-### Exit criteria
-- state change -> minimal patch -> rendered output
-- measurable perf counters exposed
+### Exit Criteria
+- consistent PBR response under environment lighting
+- measurable and documented per-pass GPU cost
+- runtime quality presets for low/mid/high targets
 
-## 4. Long-term (Phase E+)
+## 4. UI Framework Track
 ### Goal
-- complete industrial editor capabilities
+Move from architecture skeleton to production-capable framework modules.
 
 ### Work
-- DockManager
-- full Undo/Redo integration
-- virtualized hierarchy
-- Vulkan backend
-- plugin SDK
+- StateStore/Binding/Diff core loop
+- DockManager + Undo/Redo integration
+- virtualization for large hierarchy views
 
-### Exit criteria
-- stable editing on large scenes
-- backend swap with minimal upper-layer changes
+### Exit Criteria
+- stable editor interaction on large scenes
+- deterministic UI state transitions under undo/redo
 
-## 5. External impact
-- short-term: mostly stable API, better docs
-- mid-term: partial standardization in UI/input contracts
-- long-term: extensible plugin/toolchain interfaces
-
-## 6. Internal quality targets
-- CI build/test automation
-- regression checklist operation
-- long-run stability (resource and memory leak control)
+## 5. Internal Quality Targets
+- build and run checks remain green on every major subsystem update
+- docs stay synchronized with implementation
+- performance-sensitive paths always have measurable counters

@@ -1,12 +1,9 @@
-#include "PhysicsWorld.h"
-
-#include "RigidBody.h"
-#include "RustPhysicsFFI.h"
+#include "PhysicsSystem.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
-#include <unordered_map>
+#include <unordered_set>
 
 namespace rex {
 
@@ -94,75 +91,50 @@ inline void unpackBody(const ffi::RexPhysicsBody& in, RigidBody& body) {
 
 } // namespace
 
-PhysicsWorld::PhysicsWorld() {
-    m_rustWorld = static_cast<void*>(ffi::rex_physics_world_create());
+PhysicsSystem::PhysicsSystem() {
+    m_rustWorld = ffi::rex_physics_world_create();
     if (m_rustWorld) {
-        ffi::rex_physics_world_set_gravity(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), toFfi(m_gravity));
-        ffi::rex_physics_world_set_solver_iterations(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), m_solverIterations, m_positionIterations);
-        ffi::rex_physics_world_set_max_substeps(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), m_maxSubSteps);
+        ffi::rex_physics_world_set_gravity(m_rustWorld, toFfi(m_gravity));
+        ffi::rex_physics_world_set_solver_iterations(m_rustWorld, m_solverIterations, m_positionIterations);
+        ffi::rex_physics_world_set_max_substeps(m_rustWorld, m_maxSubSteps);
     }
 }
 
-PhysicsWorld::~PhysicsWorld() {
+PhysicsSystem::~PhysicsSystem() {
     if (m_rustWorld) {
-        ffi::rex_physics_world_destroy(static_cast<ffi::RexPhysicsWorld*>(m_rustWorld));
+        ffi::rex_physics_world_destroy(m_rustWorld);
         m_rustWorld = nullptr;
     }
 }
 
-void PhysicsWorld::setGravity(const Vec3& g) {
+void PhysicsSystem::setGravity(const Vec3& g) {
     m_gravity = g;
     if (m_rustWorld) {
-        ffi::rex_physics_world_set_gravity(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), toFfi(m_gravity));
+        ffi::rex_physics_world_set_gravity(m_rustWorld, toFfi(m_gravity));
     }
 }
 
-void PhysicsWorld::setSolverIterations(int velocityIterations, int positionIterations) {
+void PhysicsSystem::setSolverIterations(int velocityIterations, int positionIterations) {
     m_solverIterations = std::max(1, velocityIterations);
     m_positionIterations = std::max(1, positionIterations);
     if (m_rustWorld) {
-        ffi::rex_physics_world_set_solver_iterations(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), m_solverIterations, m_positionIterations);
+        ffi::rex_physics_world_set_solver_iterations(m_rustWorld, m_solverIterations, m_positionIterations);
     }
 }
 
-void PhysicsWorld::setMaxSubSteps(int maxSubSteps) {
+void PhysicsSystem::setMaxSubSteps(int maxSubSteps) {
     m_maxSubSteps = std::clamp(maxSubSteps, 1, 16);
     if (m_rustWorld) {
-        ffi::rex_physics_world_set_max_substeps(
-            static_cast<ffi::RexPhysicsWorld*>(m_rustWorld), m_maxSubSteps);
+        ffi::rex_physics_world_set_max_substeps(m_rustWorld, m_maxSubSteps);
     }
 }
 
-void PhysicsWorld::addBody(RigidBody* b) {
-    if (!b) return;
-    if (std::find(m_bodies.begin(), m_bodies.end(), b) == m_bodies.end()) {
-        m_bodies.push_back(b);
-    }
-}
-
-void PhysicsWorld::removeBody(RigidBody* b) {
-    if (!b) return;
-    m_bodies.erase(std::remove(m_bodies.begin(), m_bodies.end(), b), m_bodies.end());
-
-    m_joints.erase(
-        std::remove_if(m_joints.begin(), m_joints.end(),
-            [&](const DistanceJointConstraint& j) {
-                return j.a == b || j.b == b;
-            }),
-        m_joints.end());
-}
-
-int PhysicsWorld::addDistanceJoint(const DistanceJointDesc& desc) {
+int PhysicsSystem::addDistanceJoint(const DistanceJointDesc& desc) {
     if (!desc.bodyA || !desc.bodyB || desc.bodyA == desc.bodyB) {
         return -1;
     }
 
-    DistanceJointConstraint joint;
+    DistanceJointState joint;
     joint.id = m_nextJointId++;
     joint.a = desc.bodyA;
     joint.b = desc.bodyB;
@@ -180,18 +152,18 @@ int PhysicsWorld::addDistanceJoint(const DistanceJointDesc& desc) {
     return joint.id;
 }
 
-void PhysicsWorld::removeDistanceJoint(int jointId) {
+void PhysicsSystem::removeDistanceJoint(int jointId) {
     m_joints.erase(
         std::remove_if(m_joints.begin(), m_joints.end(),
-            [&](const DistanceJointConstraint& j) { return j.id == jointId; }),
+            [&](const DistanceJointState& j) { return j.id == jointId; }),
         m_joints.end());
 }
 
-void PhysicsWorld::clearDistanceJoints() {
+void PhysicsSystem::clearDistanceJoints() {
     m_joints.clear();
 }
 
-void PhysicsWorld::step(float dt) {
+void PhysicsSystem::step(float dt) {
     if (!m_rustWorld || dt <= 0.0f) return;
 
     dt = std::min(dt, m_maxFrameStep);
@@ -210,13 +182,13 @@ void PhysicsWorld::step(float dt) {
     }
 }
 
-void PhysicsWorld::simulate(float dt) {
+void PhysicsSystem::simulate(float dt) {
     if (!m_rustWorld || dt <= 0.0f) return;
 
     std::vector<RigidBody*> activeBodies;
-    activeBodies.reserve(m_bodies.size());
-    for (auto* b : m_bodies) {
-        if (b) activeBodies.push_back(b);
+    activeBodies.reserve(m_bodyPool.size());
+    for (auto& [_, body] : m_bodyPool) {
+        if (body) activeBodies.push_back(body.get());
     }
     if (activeBodies.empty()) return;
 
@@ -254,7 +226,7 @@ void PhysicsWorld::simulate(float dt) {
     }
 
     ffi::rex_physics_world_step(
-        static_cast<ffi::RexPhysicsWorld*>(m_rustWorld),
+        m_rustWorld,
         dt,
         ffiBodies.data(),
         ffiBodies.size(),
@@ -266,14 +238,14 @@ void PhysicsWorld::simulate(float dt) {
     }
 }
 
-RaycastHit PhysicsWorld::raycast(const Vec3& origin, const Vec3& direction, float maxDist) {
+RaycastHit PhysicsSystem::raycast(const Vec3& origin, const Vec3& direction, float maxDist) {
     RaycastHit best;
     if (!m_rustWorld || maxDist <= 0.0f) return best;
 
     std::vector<RigidBody*> activeBodies;
-    activeBodies.reserve(m_bodies.size());
-    for (auto* b : m_bodies) {
-        if (b) activeBodies.push_back(b);
+    activeBodies.reserve(m_bodyPool.size());
+    for (auto& [_, body] : m_bodyPool) {
+        if (body) activeBodies.push_back(body.get());
     }
     if (activeBodies.empty()) return best;
 
@@ -289,7 +261,7 @@ RaycastHit PhysicsWorld::raycast(const Vec3& origin, const Vec3& direction, floa
 
     ffi::RexRaycastHit hit{};
     ffi::rex_physics_world_raycast(
-        static_cast<ffi::RexPhysicsWorld*>(m_rustWorld),
+        m_rustWorld,
         toFfi(origin),
         toFfi(direction),
         maxDist,
@@ -297,14 +269,10 @@ RaycastHit PhysicsWorld::raycast(const Vec3& origin, const Vec3& direction, floa
         ffiBodies.size(),
         &hit);
 
-    if (hit.hit == 0u) {
-        return best;
-    }
+    if (hit.hit == 0u) return best;
 
     auto it = bodyLookup.find(hit.body);
-    if (it == bodyLookup.end()) {
-        return best;
-    }
+    if (it == bodyLookup.end()) return best;
 
     best.hit = true;
     best.body = it->second;
@@ -312,6 +280,111 @@ RaycastHit PhysicsWorld::raycast(const Vec3& origin, const Vec3& direction, floa
     best.normal = fromFfi(hit.normal);
     best.distance = hit.distance;
     return best;
+}
+
+void PhysicsSystem::update(Scene& scene, float dt) {
+    constexpr float DEG2RAD = 0.01745329251994329577f;
+    constexpr float RAD2DEG = 57.295779513082320876f;
+
+    std::unordered_set<EntityId> activeEntities;
+
+    scene.each<RigidBodyComponent>([&](EntityId id, RigidBodyComponent& rb) {
+        activeEntities.insert(id);
+        auto* transform = scene.getComponent<Transform>(id);
+        if (!transform) return;
+
+        auto it = m_bodyPool.find(id);
+        if (it == m_bodyPool.end()) {
+            auto body = std::make_unique<RigidBody>(rb.type);
+            body->position = transform->position;
+            body->scale = transform->scale;
+            body->orientation = Quat::fromEulerXYZ({
+                transform->rotation.x * DEG2RAD,
+                transform->rotation.y * DEG2RAD,
+                transform->rotation.z * DEG2RAD
+            });
+            body->velocity = rb.velocity;
+            body->angularVelocity = rb.angularVelocity;
+            body->setMass(rb.mass);
+            body->restitution = rb.restitution;
+            body->staticFriction = rb.staticFriction;
+            body->dynamicFriction = rb.dynamicFriction;
+            body->linearDamping = rb.linearDamping;
+            body->angularDamping = rb.angularDamping;
+            body->enableCCD = rb.enableCCD;
+            body->updateInertiaTensor();
+
+            rb.internalBody = body.get();
+            it = m_bodyPool.emplace(id, std::move(body)).first;
+        }
+
+        RigidBody* body = it->second.get();
+        if (!body) return;
+
+        body->type = rb.type;
+        body->setMass(rb.mass);
+        body->restitution = rb.restitution;
+        body->staticFriction = rb.staticFriction;
+        body->dynamicFriction = rb.dynamicFriction;
+        body->linearDamping = rb.linearDamping;
+        body->angularDamping = rb.angularDamping;
+        body->enableCCD = rb.enableCCD;
+        body->scale = transform->scale;
+        body->updateInertiaTensor();
+
+        if (rb.type != BodyType::Dynamic) {
+            body->position = transform->position;
+            body->orientation = Quat::fromEulerXYZ({
+                transform->rotation.x * DEG2RAD,
+                transform->rotation.y * DEG2RAD,
+                transform->rotation.z * DEG2RAD
+            });
+            body->velocity = rb.velocity;
+            body->angularVelocity = rb.angularVelocity;
+            body->wakeUp();
+        }
+        rb.internalBody = body;
+    });
+
+    for (auto it = m_bodyPool.begin(); it != m_bodyPool.end();) {
+        if (activeEntities.find(it->first) == activeEntities.end()) {
+            RigidBody* removed = it->second.get();
+            m_joints.erase(
+                std::remove_if(m_joints.begin(), m_joints.end(),
+                    [&](const DistanceJointState& j) {
+                        return j.a == removed || j.b == removed;
+                    }),
+                m_joints.end());
+            it = m_bodyPool.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    step(dt);
+
+    scene.each<RigidBodyComponent>([&](EntityId id, RigidBodyComponent& rb) {
+        auto it = m_bodyPool.find(id);
+        if (it == m_bodyPool.end() || !it->second) {
+            rb.internalBody = nullptr;
+            return;
+        }
+
+        rb.internalBody = it->second.get();
+
+        auto* transform = scene.getComponent<Transform>(id);
+        if (transform && rb.type == BodyType::Dynamic) {
+            transform->position = rb.internalBody->position;
+            const Vec3 euler = rb.internalBody->orientation.toEulerXYZ();
+            transform->rotation = {
+                euler.x * RAD2DEG,
+                euler.y * RAD2DEG,
+                euler.z * RAD2DEG,
+            };
+        }
+        rb.velocity = rb.internalBody->velocity;
+        rb.angularVelocity = rb.internalBody->angularVelocity;
+    });
 }
 
 } // namespace rex

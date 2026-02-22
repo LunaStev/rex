@@ -1,110 +1,74 @@
-# Rex 엔진 개발 문서 (내부/외부 공용)
+# Rex 엔진 개요 (내부/외부 개발자 공용)
 
-이 문서는 **Rex 엔진을 사용하는 개발자(외부)**와 **Rex 엔진을 개발하는 개발자(내부)**를 동시에 대상으로 한다.
+이 문서는 다음 두 그룹을 동시에 대상으로 한다.
+- 외부 개발자: Rex 기반 런타임/툴 제작
+- 내부 개발자: 엔진 아키텍처/시스템 확장
 
-## 1. 문서 대상
-- 외부 개발자:
-  - 엔진을 이용해 게임/툴을 만들려는 사용자
-  - 실행 방법, API 사용 흐름, 문제 해결이 필요함
-- 내부 개발자:
-  - 엔진 소스 자체를 확장/리팩토링/최적화하는 기여자
-  - 아키텍처 경계, 개발 규칙, 품질 기준이 필요함
+## 1. 현재 엔진 상태
+- 언어/빌드: C++20 + CMake + `python3 x.py`
+- 렌더링: 모듈형 Deferred 파이프라인(PBR, CSM 그림자, HDR, SSAO, Bloom, ACES 톤매핑)
+- 물리: Rust 강체 코어 + C++ 브리지(`PhysicsSystem`)
+- UI/에디터: SDL + RexUI(`rex-editor`), Qt 제거 완료
 
-## 2. 현재 엔진 상태 요약
-- 언어/빌드: C++20 + CMake
-- 그래픽: OpenGL 렌더링 파이프라인 (`Renderer`)
-- 물리: 강체 기반 물리 (`PhysicsWorld`, `PhysicsSystem`)
-- UI: Legacy RexUI + 차세대 RexUI 스켈레톤 병행
-- 에디터: SDL + RexUI 기반 (`rex-editor`)
-
-## 3. 저장소 구조
+## 2. 저장소 구조
 ```text
 Engine/
-  Core/        # ECS, 수학, 윈도우/로거
-  Graphics/    # 렌더러, 셰이더, 메시/모델
-  Physics/     # 물리 월드, 강체, ECS 브리지
-  UI/          # Legacy RexUI + New RexUI skeleton
-  EditorRex/   # 에디터 실행 진입점
-  Runtime/     # 런타임 샘플 실행 진입점
+  Core/        # ECS, 수학, 로거, 윈도우
+  Graphics/    # 모듈형 렌더러 스택
+  Physics/     # Rust 물리 코어용 C++ 브리지
+  Rust/        # Rust 크레이트(물리 코어)
+  UI/          # Legacy RexUI + 차세대 프레임워크 스켈레톤
+  EditorRex/   # 에디터 엔트리
+  Runtime/     # 런타임 샌드박스 엔트리
 docs/
-  korean/      # 한국어 문서
-  english/     # 영어 문서
+  english/
+  korean/
 ```
 
-## 4. 필수 의존성
-- OpenGL
-- SDL2
-- Freetype
-- C++20 컴파일러
-
-Fedora 계열 예시:
+## 3. 빌드/실행
+### 3.1 권장 빌드
 ```bash
-sudo dnf install gcc-c++ cmake SDL2-devel freetype-devel mesa-libGL-devel
+python3 x.py
 ```
 
-## 5. 빌드/실행
-### 5.1 빌드
+### 3.2 추가 빌드 명령
 ```bash
-cmake -S . -B build
-cmake --build build -j4
+python3 x.py configure
+python3 x.py build
+python3 x.py run editor
+python3 x.py run runtime
 ```
 
-### 5.2 실행
+### 3.3 직접 실행
 ```bash
 ./build/rex-editor
 ./build/rex-runtime
 ```
 
-## 6. 외부 개발자용 빠른 시작
-### 6.1 최소 런타임 루프 구성
-1. `Window` 생성
-2. `Scene` 생성
-3. `MeshRenderer`, `Transform` 컴포넌트 구성
-4. `PhysicsSystem.update(scene, dt)` 호출
-5. `Renderer.render(scene, camera, view, ...)` 호출
+## 4. 런타임 엔트리 권장
+기본 통합 예제로 `Engine/Runtime/runtime_main.cpp`를 사용한다.
 
-핵심 예시는 `Engine/Runtime/runtime_main.cpp`를 기준으로 시작하는 것을 권장한다.
+해당 파일은 다음을 포함한다.
+- ECS 초기화
+- Rust 물리 루프 연동
+- Deferred 렌더러 연동
+- 다광원 스트레스 씬
+- 후처리 실시간 제어
 
-### 6.2 에디터 사용 포인트
-- 메뉴에서 Add/Delete로 엔티티 관리
-- Hierarchy에서 선택
-- Details에서 Transform 편집 및 Apply
-- RMB + WASD로 카메라 이동
+## 5. 런타임 조작 요약
+- 카메라: `WASD + QE`, `Shift`, `RMB + 마우스`
+- 물리 상호작용: `LMB`, `Space`, `B`, `J`, `R`, `T`, `G`, `P`, `Delete`
+- 그래픽 튜닝: `F1`, `F2`, `F3/F4`, `F5/F6`, `L`, `K`
 
-## 7. 내부 개발자용 작업 원칙
-### 7.1 레이어 경계
-- Core는 상위 모듈 정책을 몰라야 한다.
-- 렌더러 종속 코드는 Renderer 하위에 둔다.
-- UI는 Command/State 기반으로 모델을 간접 변경한다.
+## 6. 내부 개발 규칙
+- Core/Graphics/Physics/UI 경계 준수
+- 하위 모듈에서 상위 모듈 의존성 역참조 금지
+- 코드 변경 시 문서 동기화
+- 머지 전 빌드 검증 필수(`python3 x.py build`)
 
-### 7.2 문서/코드 동기화
-아래 파일을 변경하면 관련 문서도 함께 갱신한다.
-- 물리 로직: `docs/korean/physics.md`
-- 렌더 파이프라인: `docs/korean/graphics.md`
-- UI 아키텍처: `docs/korean/rexui_*.md`
-
-### 7.3 품질 기준
-- 빌드 성공
-- 기능 회귀 없음
-- 문서/코드 불일치 없음
-- 성능 민감 경로(물리 step, 렌더 루프, UI diff) 계측 가능
-
-## 8. 문제 해결
-### 8.1 실행이 바로 종료됨
-- SDL/GL 초기화 로그 확인
-- `Window` 생성 실패 로그 확인 (`Engine/Core/Window.cpp`)
-
-### 8.2 폰트가 보이지 않음
-- `Engine/UI/Fonts/Roboto-Regular.ttf` 존재 확인
-- `RexUIRenderer` 폰트 후보 경로 확인
-
-### 8.3 물리가 흔들림/관통
-- solver iteration 증가
-- substep 증가
-- CCD 활성화 확인
-
-## 9. 관련 문서
-- `core.md`, `entity.md`, `graphics.md`, `physics.md`, `input.md`, `world.md`
-- `roadmap.md`
-- `rexui_slate_grade_architecture.md`
-- `rexui_framework_execution_lock.md`
+## 7. 다음 문서
+- 렌더링 상세: `docs/korean/graphics.md`
+- 물리 연동: `docs/korean/physics.md`
+- ECS/컴포넌트: `docs/korean/core.md`, `docs/korean/entity.md`
+- 런타임 월드 흐름: `docs/korean/world.md`
+- 중장기 계획: `docs/korean/roadmap.md`

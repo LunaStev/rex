@@ -1,101 +1,74 @@
-# Rex Engine Developer Documentation (Internal + External)
+# Rex Engine Overview (Internal + External)
 
-This documentation set is intended for both:
-- **External developers** who build games/tools on top of Rex
-- **Internal developers** who extend and maintain the engine itself
+This documentation set targets both:
+- external developers building runtime content/tools with Rex
+- internal developers extending engine architecture and systems
 
-## 1. Audience
-- External:
-  - needs practical usage flow, build/run commands, API examples
-- Internal:
-  - needs architecture boundaries, development rules, quality gates
+## 1. Current Engine Snapshot
+- Language/build: C++20 + CMake + `python3 x.py`
+- Rendering: modular Deferred pipeline (PBR, CSM shadows, HDR, SSAO, Bloom, ACES tone mapping)
+- Physics: Rust rigid-body core + C++ bridge (`PhysicsSystem`)
+- UI/editor: SDL + RexUI (`rex-editor`), Qt removed
 
-## 2. Current engine snapshot
-- Language/build: C++20 + CMake
-- Rendering: OpenGL pipeline (`Renderer`)
-- Physics: rigid-body simulation (`PhysicsWorld`, `PhysicsSystem`)
-- UI: legacy RexUI plus next-gen industrial RexUI skeleton
-- Editor: SDL + RexUI (`rex-editor`), Qt removed
-
-## 3. Repository layout
+## 2. Repository Layout
 ```text
 Engine/
-  Core/        # ECS, math, window/logger
-  Graphics/    # renderer, shader, mesh/model
-  Physics/     # world, rigid body, ECS bridge
-  UI/          # legacy RexUI + next-gen skeleton
-  EditorRex/   # editor entry
-  Runtime/     # runtime sample entry
+  Core/        # ECS, math, logger, window
+  Graphics/    # modular renderer stack
+  Physics/     # C++ bridge layer for Rust physics
+  Rust/        # Rust crates (physics core)
+  UI/          # legacy RexUI + next-gen framework skeleton
+  EditorRex/   # editor entry point
+  Runtime/     # runtime sandbox entry point
 docs/
-  korean/
   english/
+  korean/
 ```
 
-## 4. Required dependencies
-- OpenGL
-- SDL2
-- Freetype
-- C++20 toolchain
-
-Fedora-like example:
+## 3. Build and Run
+### 3.1 Build (recommended)
 ```bash
-sudo dnf install gcc-c++ cmake SDL2-devel freetype-devel mesa-libGL-devel
+python3 x.py
 ```
 
-## 5. Build and run
-### 5.1 Build
+### 3.2 Additional build commands
 ```bash
-cmake -S . -B build
-cmake --build build -j4
+python3 x.py configure
+python3 x.py build
+python3 x.py run editor
+python3 x.py run runtime
 ```
 
-### 5.2 Run
+### 3.3 Direct execution
 ```bash
 ./build/rex-editor
 ./build/rex-runtime
 ```
 
-## 6. External developer quick start
-### 6.1 Minimal runtime flow
-1. Create `Window`
-2. Create `Scene`
-3. Add `Transform` + `MeshRenderer`
-4. Update physics (`PhysicsSystem`)
-5. Render (`Renderer`)
+## 4. Runtime Entry Recommendation
+Use `Engine/Runtime/runtime_main.cpp` as the baseline integration sample.
 
-Use `Engine/Runtime/runtime_main.cpp` as the baseline.
+It demonstrates:
+- ECS setup
+- Rust physics update loop
+- Deferred renderer integration
+- many-light visual stress scene
+- runtime post-process control
 
-### 6.2 Editor usage highlights
-- Add/Delete entities from top controls
-- select from hierarchy
-- edit transform in details and apply
-- RMB + WASD camera navigation
+## 5. Runtime Controls Summary
+- camera: `WASD + QE`, `Shift`, `RMB + mouse`
+- physics gameplay: `LMB`, `Space`, `B`, `J`, `R`, `T`, `G`, `P`, `Delete`
+- graphics tuning: `F1`, `F2`, `F3/F4`, `F5/F6`, `L`, `K`
 
-## 7. Internal developer rules
-### 7.1 Layer boundaries
-- Core should not depend on upper-layer policies
-- backend-specific code stays under Renderer
-- UI mutates domain state through command/state flow
+## 6. Internal Development Rules
+- Keep module boundaries explicit (Core/Graphics/Physics/UI contracts)
+- Avoid upward dependency leaks from low-level modules
+- Keep docs synchronized with behavior changes
+- Verify with build before merge (`python3 x.py build`)
 
-### 7.2 Keep docs in sync
-When changing these areas, update matching docs:
-- physics logic -> `physics.md`
-- render pipeline -> `graphics.md`
-- UI architecture -> `rexui_*.md`
-
-### 7.3 Quality gate
-- build must pass
-- no behavioral regressions
-- docs and code must match
-- performance-critical paths must remain measurable
-
-## 8. Troubleshooting
-- startup exit: inspect SDL/GL init logs (`Window`)
-- missing UI text: verify `Engine/UI/Fonts/Roboto-Regular.ttf`
-- physics jitter/tunneling: increase solver/substeps, verify CCD
-
-## 9. Related docs
-- `core.md`, `entity.md`, `graphics.md`, `physics.md`, `input.md`, `world.md`
-- `roadmap.md`
-- `rexui_slate_grade_architecture.md`
-- `rexui_framework_execution_lock.md`
+## 7. Where to Read Next
+- rendering details: `docs/english/graphics.md`
+- physics integration: `docs/english/physics.md`
+- ECS and components: `docs/english/core.md`, `docs/english/entity.md`
+- runtime/world flow: `docs/english/world.md`
+- near/far plans: `docs/english/roadmap.md`

@@ -1,65 +1,67 @@
 # Rex 엔진 로드맵 (내부/외부 개발자 공용)
 
-## 1. 현재 완료 상태
-### 엔진
-- ECS 기본 구조
-- OpenGL 렌더러
-- 물리 고도화(Quat, CCD, Dynamic AABB Tree, 2~4점 매니폴드)
+## 1. 최근 완료
+### 렌더링
+- Deferred 파이프라인 전환
+- RenderGraph 스타일 패스 시퀀싱
+- PBR Cook-Torrance 셰이딩 경로
+- Directional CSM Atlas 그림자 경로
+- HDR + SSAO + Bloom + ACES 톤매핑 체인
+- 런타임 스트레스 씬 통합(`Engine/Runtime/runtime_main.cpp`)
 
-### 에디터
-- Qt 제거
-- SDL + RexUI 기반 에디터 전환
+### 물리
+- Rust 물리 코어와 C++ 브리지 연동 완료
+- 쿼터니언 동역학/제약 흐름 런타임 적용
 
-### UI 프레임워크
-- 산업용 RexUI 스켈레톤(Design Freeze + Interface-first) 생성
+### 에디터/UI
+- Qt 제거 완료
+- SDL + RexUI 에디터 경로 안정화
+- 차세대 산업용 RexUI 설계 스켈레톤(아키텍처 우선) 고정
 
-## 2. 단기 계획 (Phase A/B)
+## 2. 단기 계획 (그래픽)
 ### 목표
-- 차세대 RexUI 최소 동작 루프 확보
+Deferred 전환 이후 품질/성능 격차 보완
 
 ### 작업
-- Core Geometry/Widget interface 구현
-- WidgetTree MVP
-- LayoutEngine/EventRouter 기본 버전
+- Forward+ tile/cluster light culling
+- RenderGraph 리소스 aliasing/reuse 강화
+- cascade 안정화(텍셀 스냅/스플릿 튜닝)
+- soft shadow 품질 단계 옵션화
 
 ### 완료 기준
-- 기본 위젯 트리 렌더 + 입력 이벤트 전달 동작
-- 최소 단위 테스트 통과
+- 대량 광원 환경에서 안정적인 프레임 타임
+- 카메라 이동 시 그림자 떨림 감소
+- 기존 Deferred 품질 대비 회귀 없음
 
-## 3. 중기 계획 (Phase C/D)
+## 3. 중기 계획 (그래픽 + 런타임)
 ### 목표
-- 상태 중심 UI 파이프라인 정착
+환경 기반 조명 파이프라인 완성 및 시네마틱 품질 향상
 
 ### 작업
-- UIStateStore + Binding 최소 구현
-- DiffEngine + DrawCommandBuilder
-- OpenGL backend 정식 구현(`IRenderBackend`)
+- IBL 전체 경로(irradiance + prefiltered env + BRDF LUT)
+- color grading LUT 파이프라인
+- 고급 효과(TAA/DOF/motion blur) 선택 구현 + 품질 게이트
+- GPU 프로파일 마커 및 패스별 계측 도구
 
 ### 완료 기준
-- 상태 변경 -> 최소 패치 -> 렌더 반영
-- 성능 계측 지표 노출
+- 환경광 기반 PBR 응답 일관성 확보
+- 패스별 GPU 비용 계측/문서화
+- 런타임 품질 프리셋(low/mid/high) 제공
 
-## 4. 장기 계획 (Phase E+)
+## 4. UI 프레임워크 트랙
 ### 목표
-- 산업용 에디터 기능 완성
+설계 스켈레톤에서 실사용 프레임워크 모듈로 이행
 
 ### 작업
-- DockManager
-- Undo/Redo 완전 연동
-- Virtualized Hierarchy
-- Vulkan backend
-- Plugin SDK
+- StateStore/Binding/Diff 핵심 루프
+- DockManager + Undo/Redo 연동
+- 대규모 Hierarchy virtualization
 
 ### 완료 기준
-- 대규모 씬에서도 편집 안정성 확보
-- 백엔드 교체 시 상위 레이어 코드 변경 최소
+- 대규모 씬에서도 안정적인 에디터 상호작용
+- undo/redo 시 UI 상태 전이 일관성 확보
 
-## 5. 외부 개발자 영향
-- 단기: API 변화 적음, 문서 보강
-- 중기: UI/입력 API 일부 표준화
-- 장기: 확장 가능한 플러그인/툴체인 인터페이스 제공
-
-## 6. 내부 품질 목표
-- 빌드/테스트 자동화
-- 회귀 체크리스트 운영
-- 장시간 실행 안정성(메모리/리소스 누수) 확보
+## 5. 내부 품질 목표
+- 주요 시스템 변경 시 빌드/실행 검증 유지
+- 구현과 문서 동기화 유지
+- 성능 민감 경로는 항상 계측 가능 상태 유지

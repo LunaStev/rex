@@ -104,6 +104,15 @@ void rex_physics_world_raycast(
     const RexPhysicsBody* bodies,
     std::size_t bodyCount,
     RexRaycastHit* outHit);
+
+void rex_rigidbody_set_mass(RexPhysicsBody* body, float mass);
+void rex_rigidbody_apply_force(RexPhysicsBody* body, RexVec3 force);
+void rex_rigidbody_apply_impulse(RexPhysicsBody* body, RexVec3 impulse);
+void rex_rigidbody_apply_torque(RexPhysicsBody* body, RexVec3 torque);
+void rex_rigidbody_apply_angular_impulse(RexPhysicsBody* body, RexVec3 impulse);
+void rex_rigidbody_apply_impulse_at_point(RexPhysicsBody* body, RexVec3 impulse, RexVec3 worldPoint);
+void rex_rigidbody_update_inertia_tensor(RexPhysicsBody* body);
+void rex_rigidbody_wake_up(RexPhysicsBody* body);
 }
 
 } // namespace rex::ffi

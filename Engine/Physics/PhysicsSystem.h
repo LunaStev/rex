@@ -1,129 +1,84 @@
 #pragma once
-#include "../Core/Scene.h"
+
 #include "../Core/Components.h"
-#include "PhysicsWorld.h"
+#include "../Core/Scene.h"
 #include "RigidBody.h"
-#include <cmath>
+#include "RustPhysicsFFI.h"
+
+#include <memory>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 namespace rex {
 
-class PhysicsSystem {
-public:
-    PhysicsSystem() {
-        m_world = std::make_unique<PhysicsWorld>();
-    }
-
-    void update(Scene& scene, float dt) {
-        constexpr float DEG2RAD = 0.01745329251994329577f;
-        constexpr float RAD2DEG = 57.295779513082320876f;
-
-        std::unordered_set<EntityId> activeEntities;
-
-        // 1. Sync ECS -> Physics
-        scene.each<RigidBodyComponent>([&](EntityId id, RigidBodyComponent& rb) {
-            activeEntities.insert(id);
-            auto* transform = scene.getComponent<Transform>(id);
-            if (!transform) return;
-
-            auto it = m_bodyPool.find(id);
-            if (it == m_bodyPool.end()) {
-                auto body = std::make_unique<RigidBody>(rb.type);
-                body->position = transform->position;
-                body->scale = transform->scale;
-                body->orientation = Quat::fromEulerXYZ({
-                    transform->rotation.x * DEG2RAD,
-                    transform->rotation.y * DEG2RAD,
-                    transform->rotation.z * DEG2RAD
-                });
-                body->velocity = rb.velocity;
-                body->angularVelocity = rb.angularVelocity;
-                body->setMass(rb.mass);
-                body->restitution = rb.restitution;
-                body->staticFriction = rb.staticFriction;
-                body->dynamicFriction = rb.dynamicFriction;
-                body->linearDamping = rb.linearDamping;
-                body->angularDamping = rb.angularDamping;
-                body->enableCCD = rb.enableCCD;
-                body->updateInertiaTensor();
-
-                rb.internalBody = body.get();
-                m_world->addBody(rb.internalBody);
-                it = m_bodyPool.emplace(id, std::move(body)).first;
-            }
-
-            RigidBody* body = it->second.get();
-            if (!body) return;
-
-            body->type = rb.type;
-            body->setMass(rb.mass);
-            body->restitution = rb.restitution;
-            body->staticFriction = rb.staticFriction;
-            body->dynamicFriction = rb.dynamicFriction;
-            body->linearDamping = rb.linearDamping;
-            body->angularDamping = rb.angularDamping;
-            body->enableCCD = rb.enableCCD;
-            body->scale = transform->scale;
-            body->updateInertiaTensor();
-
-            // Static/Kinematic transforms are controlled by scene-side transforms.
-            if (rb.type != BodyType::Dynamic) {
-                body->position = transform->position;
-                body->orientation = Quat::fromEulerXYZ({
-                    transform->rotation.x * DEG2RAD,
-                    transform->rotation.y * DEG2RAD,
-                    transform->rotation.z * DEG2RAD
-                });
-                body->velocity = rb.velocity;
-                body->angularVelocity = rb.angularVelocity;
-                body->wakeUp();
-            }
-            rb.internalBody = body;
-        });
-
-        // Remove orphaned physics bodies.
-        for (auto it = m_bodyPool.begin(); it != m_bodyPool.end(); ) {
-            if (activeEntities.find(it->first) == activeEntities.end()) {
-                m_world->removeBody(it->second.get());
-                it = m_bodyPool.erase(it);
-            } else {
-                ++it;
-            }
-        }
-
-        // 2. Step Simulation
-        m_world->step(dt);
-
-        // 3. Sync Physics -> ECS
-        scene.each<RigidBodyComponent>([&](EntityId id, RigidBodyComponent& rb) {
-            auto it = m_bodyPool.find(id);
-            if (it == m_bodyPool.end() || !it->second) {
-                rb.internalBody = nullptr;
-                return;
-            }
-            rb.internalBody = it->second.get();
-
-            auto* transform = scene.getComponent<Transform>(id);
-            if (transform && rb.type == BodyType::Dynamic) {
-                transform->position = rb.internalBody->position;
-                const Vec3 euler = rb.internalBody->orientation.toEulerXYZ();
-                transform->rotation = {
-                    euler.x * RAD2DEG,
-                    euler.y * RAD2DEG,
-                    euler.z * RAD2DEG
-                };
-            }
-            rb.velocity = rb.internalBody->velocity;
-            rb.angularVelocity = rb.internalBody->angularVelocity;
-        });
-    }
-
-    PhysicsWorld& getWorld() { return *m_world; }
-
-private:
-    std::unique_ptr<PhysicsWorld> m_world;
-    std::unordered_map<EntityId, std::unique_ptr<RigidBody>> m_bodyPool;
+struct RaycastHit {
+    bool hit = false;
+    Vec3 point{0, 0, 0};
+    Vec3 normal{0, 0, 1};
+    float distance = 0.0f;
+    RigidBody* body = nullptr;
 };
 
-}
+struct DistanceJointDesc {
+    RigidBody* bodyA = nullptr;
+    RigidBody* bodyB = nullptr;
+    Vec3 localAnchorA{0, 0, 0};
+    Vec3 localAnchorB{0, 0, 0};
+    float restLength = -1.0f;
+    float stiffness = 1.0f;
+    float damping = 0.2f;
+};
+
+class PhysicsSystem {
+public:
+    PhysicsSystem();
+    ~PhysicsSystem();
+
+    PhysicsSystem(const PhysicsSystem&) = delete;
+    PhysicsSystem& operator=(const PhysicsSystem&) = delete;
+
+    void update(Scene& scene, float dt);
+
+    void setGravity(const Vec3& g);
+    Vec3 getGravity() const { return m_gravity; }
+    void setSolverIterations(int velocityIterations, int positionIterations);
+    void setMaxSubSteps(int maxSubSteps);
+
+    int addDistanceJoint(const DistanceJointDesc& desc);
+    void removeDistanceJoint(int jointId);
+    void clearDistanceJoints();
+
+    RaycastHit raycast(const Vec3& origin, const Vec3& direction, float maxDist);
+
+private:
+    struct DistanceJointState {
+        int id = 0;
+        RigidBody* a = nullptr;
+        RigidBody* b = nullptr;
+        Vec3 localAnchorA{0, 0, 0};
+        Vec3 localAnchorB{0, 0, 0};
+        float restLength = 0.0f;
+        float stiffness = 1.0f;
+        float damping = 0.2f;
+    };
+
+    void step(float dt);
+    void simulate(float dt);
+
+    std::unordered_map<EntityId, std::unique_ptr<RigidBody>> m_bodyPool;
+    std::vector<DistanceJointState> m_joints;
+
+    ffi::RexPhysicsWorld* m_rustWorld = nullptr;
+
+    Vec3 m_gravity{0, -9.81f, 0};
+    int m_solverIterations = 10;
+    int m_positionIterations = 4;
+    int m_maxSubSteps = 6;
+
+    const float FIXED_STEP = 1.0f / 60.0f;
+    float m_accumulator = 0.0f;
+    float m_maxFrameStep = 0.1f;
+    int m_nextJointId = 1;
+};
+
+} // namespace rex

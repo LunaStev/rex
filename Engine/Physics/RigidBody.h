@@ -17,12 +17,7 @@ public:
     void applyImpulseAtPoint(const Vec3& impulse, const Vec3& worldPoint);
     void wakeUp();
     void updateInertiaTensor();
-
-    void setMass(float m) { 
-        mass = m; 
-        invMass = (type == BodyType::Dynamic && m > 0.0f) ? 1.0f / m : 0.0f;
-        updateInertiaTensor();
-    }
+    void setMass(float m);
 
     // State
     Vec3 position{0,0,0};

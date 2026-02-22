@@ -47,7 +47,7 @@ struct RigidBodyComponent {
     bool enableCCD = true;
     Vec3 velocity{0,0,0};
     Vec3 angularVelocity{0,0,0}; // radians/sec
-    
+
     RigidBody* internalBody = nullptr;
 };
 
@@ -65,9 +65,27 @@ struct Camera {
 };
 
 struct Light {
-    Vec3 color{1, 1, 1};
+    enum Type { Directional, Point, Spot, Area } type = Point;
+
+    Vec3 color{1.0f, 1.0f, 1.0f};
     float intensity = 1.0f;
-    enum Type { Directional, Point } type = Point;
+
+    bool castShadows = true;
+    bool volumetric = false;
+
+    float range = 20.0f;
+
+    float innerConeDeg = 20.0f;
+    float outerConeDeg = 35.0f;
+
+    float attenuationConstant = 1.0f;
+    float attenuationLinear = 0.09f;
+    float attenuationQuadratic = 0.032f;
+
+    Light() = default;
+    Light(Vec3 c, float i, Type t = Point)
+        : type(t), color(c), intensity(i) {
+    }
 };
 
 }

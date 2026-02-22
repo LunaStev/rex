@@ -1,47 +1,62 @@
 # ![Rex Logo](.github/REX_LOGO_WHITE.png)
 
-Rex is a lightweight C++20 game engine/editor codebase with an ECS core, OpenGL renderer, rigid-body physics, and an SDL + RexUI editor.
+Rex is a C++20 game engine/editor codebase with:
+- ECS scene/runtime core
+- OpenGL real-time renderer (Deferred pipeline)
+- Rust-based rigid-body physics core with C++ integration
+- SDL + RexUI editor/runtime tooling
 
-This repository is intended for both:
-- external developers building runtime content/tools on top of Rex
-- internal contributors extending engine systems and architecture
+This repository is maintained as internal+external developer documentation and source.
 
-## Current Highlights
-- ECS-style scene model (`Scene` + component pools)
-- OpenGL rendering pipeline with mesh/model support and tonemapping
-- Rigid-body physics with:
-  - quaternion rotational dynamics
-  - Rust core + C++ bridge architecture
-  - broadphase candidate generation (bounding-sphere overlap)
-  - contact manifold caching/warmstart (2-4 points)
-  - TOI-based CCD (swept-sphere approximation)
-  - distance joint constraints
-- Editor migrated away from Qt to SDL + RexUI (`rex-editor`)
-- Next-generation industrial RexUI framework skeleton under `Engine/UI/RexUI/`
+## What Is Implemented
+- Deferred rendering pipeline with modular passes:
+  - Shadow pass (cascaded directional shadow atlas)
+  - GBuffer pass
+  - Lighting pass (Cook-Torrance PBR)
+  - Post process pass (SSAO, Bloom, ACES tone mapping, HDR)
+  - UI pass reservation
+- Multi-light scene support:
+  - Directional / Point / Spot / Area light types
+  - Light manager + view-space light culling (CPU-side)
+- Graphics module split by responsibility:
+  - `Engine/Graphics/Core`
+  - `Engine/Graphics/Lighting`
+  - `Engine/Graphics/Material`
+  - `Engine/Graphics/Pipeline`
+  - `Engine/Graphics/PostProcess`
+  - `Engine/Graphics/HDR`
+  - `Engine/Graphics/Culling`
+- Rust physics integration through `PhysicsSystem` and FFI bridge
+- Qt-free editor path (`rex-editor`) and runtime sandbox (`rex-runtime`)
 
 ## Requirements
 - C++20 compiler
 - CMake 3.20+
+- Python 3
 - Rust toolchain (`rustc`, `cargo`)
-- SDL2
+- SDL2 development libraries
 - OpenGL development libraries
 - Freetype
 
-### Fedora-like setup
+Fedora-like setup:
 ```bash
-sudo dnf install gcc-c++ cmake SDL2-devel freetype-devel mesa-libGL-devel
+sudo dnf install gcc-c++ cmake python3 SDL2-devel freetype-devel mesa-libGL-devel
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
 ## Build
+Use the project build utility:
 ```bash
 python3 x.py
 ```
 
-Manual CMake flow (optional):
+Other useful commands:
 ```bash
-cmake -S . -B build
-cmake --build build -j4
+python3 x.py configure
+python3 x.py build
+python3 x.py run editor
+python3 x.py run runtime
+python3 x.py clean
 ```
 
 ## Run
@@ -50,34 +65,54 @@ cmake --build build -j4
 ./build/rex-runtime
 ```
 
-## Quick Runtime Flow
-Use `Engine/Runtime/runtime_main.cpp` as the baseline integration example.
+## Runtime Sandbox (Visual Fidelity Test)
+`Engine/Runtime/runtime_main.cpp` is configured as a stress/demo scene for the upgraded graphics stack.
 
-Typical frame flow:
-1. Create `Window`, `Scene`, `Renderer`, `PhysicsSystem`
-2. Create entities/components (`Transform`, `MeshRenderer`, `RigidBodyComponent`, etc.)
-3. Per frame:
-   - poll events
-   - `physics.update(scene, dt)`
-   - `renderer.render(scene, camera, view, viewPos, width, height, backbufferFBO)`
-   - swap buffers
+It includes:
+- directional shadowed key light
+- animated point + spot lights
+- area light ring
+- 128 stress point lights for many-light tests
+- HDR + Bloom + SSAO + tone mapping path through the Deferred pipeline
+
+Runtime controls:
+- `WASD + QE`: move camera
+- `Shift`: speed boost
+- `RMB hold + mouse`: freelook
+- `LMB`: raycast and apply impulse
+- `Space`: spawn projectile cube
+- `B`: spawn cube
+- `J`: create distance joint between latest dynamic bodies
+- `R`: impulse burst
+- `T`: torque burst
+- `G`: toggle gravity
+- `P`: pause physics
+- `F1`: bloom toggle
+- `F2`: auto exposure toggle
+- `F3/F4`: exposure down/up
+- `F5/F6`: bloom strength down/up
+- `L`: stress light on/off
+- `K`: stress light animation on/off
+- `Delete`: remove last dynamic entity
+- `Esc`: quit
 
 ## Project Layout
 ```text
 Engine/
-  Core/        # ECS, math, window/logger
-  Graphics/    # renderer, shader, mesh/model
-  Physics/     # rigid bodies, world solver, ECS bridge
-  UI/          # legacy RexUI + next-gen RexUI skeleton
-  EditorRex/   # editor entry point (SDL + RexUI)
-  Runtime/     # runtime sample entry point
+  Core/        # ECS, math, logger, window
+  Graphics/    # modular rendering framework + renderer facade
+  Physics/     # C++ bridge layer over Rust physics core
+  Rust/        # Rust physics crates
+  UI/          # RexUI legacy + next-gen framework skeleton
+  EditorRex/   # editor entry
+  Runtime/     # runtime sandbox entry
 docs/
   english/     # English developer docs
   korean/      # Korean developer docs
 ```
 
 ## Documentation
-Start here:
+Start with:
 - `docs/english/overview.md`
 - `docs/english/core.md`
 - `docs/english/entity.md`
@@ -87,25 +122,18 @@ Start here:
 - `docs/english/world.md`
 - `docs/english/roadmap.md`
 
-RexUI architecture and execution policy:
-- `docs/english/rexui_slate_grade_architecture.md`
-- `docs/english/rexui_framework_execution_lock.md`
+Korean set mirrors this under `docs/korean/`.
 
-## Development Notes
-- Keep module boundaries explicit (Core -> Framework -> Runtime -> Renderer direction for next-gen UI)
-- Avoid direct model mutation from UI in next-gen RexUI path; use command/state flow
-- Keep docs synchronized with code changes in physics, rendering, and UI architecture
-
-## Known Scope and Limitations
-- The next-gen RexUI framework is currently a design-locked skeleton (interface/TODO phase), not feature-complete yet
-- Physics currently focuses on OBB-style rigid body flow and distance joints; broader shape/joint stacks are future work
-- Deterministic networking and multithreaded physics solving are not implemented yet
+## Current Scope Notes
+- Forward+ tile/cluster light culling is not finished yet (current many-light culling is CPU-side ranking)
+- IBL environment-map workflow is partially scaffolded but not fully production-complete
+- Next-gen RexUI is architecture-first skeleton stage (not fully feature-complete)
 
 ## Contributing
-When submitting changes:
-1. keep build green (`python3 x.py`)
-2. update relevant docs under `docs/english/` (and `docs/korean/` when applicable)
-3. document architectural or contract-level changes clearly in PR notes
+When you change engine behavior:
+1. keep build green (`python3 x.py build`)
+2. update related docs under `docs/english` and `docs/korean`
+3. keep module boundaries clean (no renderer leakage into unrelated layers)
 
 ## License
 See `LICENSE`.
