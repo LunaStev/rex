@@ -572,6 +572,7 @@ compile_commands.json
 mono_crash.*
 
 # Build results
+[Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
@@ -585,6 +586,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+!Engine/
+!Engine/Editor/
+!Engine/Editor/Debug/
+!Engine/Editor/Debug/**
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
