@@ -11,9 +11,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <limits>
+#include <unordered_map>
 #include <vector>
 
 namespace {
+
+using namespace rex;
 
 constexpr float DEG2RAD = 0.01745329251994329577f;
 
@@ -21,124 +25,258 @@ inline float clampf(float v, float lo, float hi) {
     return std::clamp(v, lo, hi);
 }
 
-inline rex::Vec3 forwardFromYawPitch(float yawDeg, float pitchDeg) {
+inline int signi(float v) {
+    return (v > 0.0f) ? 1 : ((v < 0.0f) ? -1 : 0);
+}
+
+inline Vec3 forwardFromYawPitch(float yawDeg, float pitchDeg) {
     const float yaw = yawDeg * DEG2RAD;
     const float pitch = pitchDeg * DEG2RAD;
     const float cy = std::cos(yaw);
     const float sy = std::sin(yaw);
     const float cp = std::cos(pitch);
     const float sp = std::sin(pitch);
-    const rex::Vec3 forward{sy * cp, sp, cy * cp};
-    return rex::normalize(forward);
+    return normalize(Vec3{sy * cp, sp, cy * cp});
 }
 
-inline rex::Vec3 rightFromForward(const rex::Vec3& forward) {
-    return rex::normalize(rex::cross({0.0f, 1.0f, 0.0f}, forward));
+inline Vec3 rightFromForward(const Vec3& forward) {
+    return normalize(cross({0.0f, 1.0f, 0.0f}, forward));
 }
 
-inline rex::Vec3 upFromForwardRight(const rex::Vec3& forward, const rex::Vec3& right) {
-    return rex::normalize(rex::cross(forward, right));
+inline Vec3 upFromForwardRight(const Vec3& forward, const Vec3& right) {
+    return normalize(cross(forward, right));
 }
 
-rex::EntityId spawnCube(
-    rex::Scene& scene,
-    rex::Mesh* cube,
-    const rex::Vec3& position,
-    const rex::Vec3& scale,
-    const rex::Vec3& color,
-    rex::BodyType bodyType,
-    float mass,
-    const rex::Vec3& velocity = {0, 0, 0},
-    const rex::Vec3& angularVelocity = {0, 0, 0},
-    bool ccd = true,
-    float restitution = 0.25f,
-    float staticFriction = 0.7f,
-    float dynamicFriction = 0.5f,
-    float metallic = 0.05f,
-    float roughness = 0.65f,
-    float ao = 1.0f) {
+struct GridPos {
+    int x = 0;
+    int y = 0;
+    int z = 0;
 
-    using namespace rex;
+    bool operator==(const GridPos& rhs) const {
+        return x == rhs.x && y == rhs.y && z == rhs.z;
+    }
+};
 
-    const EntityId entity = scene.createEntity();
+struct GridPosHash {
+    size_t operator()(const GridPos& p) const noexcept {
+        size_t h = static_cast<size_t>(std::hash<int>{}(p.x));
+        h ^= static_cast<size_t>(std::hash<int>{}(p.y)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        h ^= static_cast<size_t>(std::hash<int>{}(p.z)) + 0x9e3779b9 + (h << 6) + (h >> 2);
+        return h;
+    }
+};
 
-    Transform& t = scene.addComponent<Transform>(entity, position);
-    t.scale = scale;
+enum class BlockKind {
+    Grass,
+    Dirt,
+    Stone,
+    Sand,
+    Bedrock,
+};
 
-    scene.addComponent<MeshRenderer>(entity, nullptr, cube, color, metallic, roughness, ao);
+struct BlockVisual {
+    Vec3 color{1.0f, 1.0f, 1.0f};
+    float metallic = 0.02f;
+    float roughness = 0.90f;
+    float ao = 1.0f;
+    const char* name = "Unknown";
+};
 
-    RigidBodyComponent& rb = scene.addComponent<RigidBodyComponent>(entity, bodyType, mass);
-    rb.enableCCD = ccd;
-    rb.velocity = velocity;
-    rb.angularVelocity = angularVelocity;
-    rb.restitution = restitution;
-    rb.staticFriction = staticFriction;
-    rb.dynamicFriction = dynamicFriction;
-    rb.linearDamping = 0.02f;
-    rb.angularDamping = 0.06f;
-
-    return entity;
+BlockVisual getBlockVisual(BlockKind kind) {
+    switch (kind) {
+        case BlockKind::Grass: return {{0.34f, 0.65f, 0.28f}, 0.02f, 0.88f, 1.0f, "Grass"};
+        case BlockKind::Dirt: return {{0.49f, 0.33f, 0.22f}, 0.01f, 0.92f, 1.0f, "Dirt"};
+        case BlockKind::Stone: return {{0.56f, 0.57f, 0.61f}, 0.03f, 0.84f, 1.0f, "Stone"};
+        case BlockKind::Sand: return {{0.77f, 0.72f, 0.48f}, 0.01f, 0.94f, 1.0f, "Sand"};
+        case BlockKind::Bedrock: return {{0.14f, 0.14f, 0.16f}, 0.06f, 0.96f, 1.0f, "Bedrock"};
+    }
+    return {{1.0f, 0.0f, 1.0f}, 0.0f, 1.0f, 1.0f, "Invalid"};
 }
 
-rex::EntityId spawnLightEntity(
-    rex::Scene& scene,
-    const rex::Vec3& position,
-    const rex::Vec3& rotationDeg,
-    const rex::Vec3& color,
-    float intensity,
-    rex::Light::Type type,
-    float range,
-    bool castShadows,
-    bool volumetric,
-    float innerConeDeg = 20.0f,
-    float outerConeDeg = 35.0f,
-    float attenuationLinear = 0.09f,
-    float attenuationQuadratic = 0.032f) {
-    using namespace rex;
-
-    const EntityId entity = scene.createEntity();
-    Transform& t = scene.addComponent<Transform>(entity, position);
-    t.rotation = rotationDeg;
-
-    Light& light = scene.addComponent<Light>(entity, color, intensity, type);
-    light.range = range;
-    light.castShadows = castShadows;
-    light.volumetric = volumetric;
-    light.innerConeDeg = innerConeDeg;
-    light.outerConeDeg = outerConeDeg;
-    light.attenuationLinear = attenuationLinear;
-    light.attenuationQuadratic = attenuationQuadratic;
-    return entity;
+const char* getBlockName(BlockKind kind) {
+    return getBlockVisual(kind).name;
 }
 
-void connectChain(
-    rex::PhysicsSystem& physics,
-    rex::Scene& scene,
-    const std::vector<rex::EntityId>& chain,
-    std::vector<int>& outJointIds,
-    float stiffness,
-    float damping) {
+inline Vec3 toWorldPos(const GridPos& cell) {
+    return {float(cell.x), float(cell.y), float(cell.z)};
+}
 
-    using namespace rex;
+int terrainHeight(int x, int z) {
+    const float h = 4.5f
+        + std::sin(float(x) * 0.22f) * 1.9f
+        + std::cos(float(z) * 0.17f) * 1.5f
+        + std::sin(float(x + z) * 0.11f) * 1.0f;
+    return std::clamp(static_cast<int>(std::floor(h)), 2, 9);
+}
 
-    for (size_t i = 1; i < chain.size(); ++i) {
-        auto* a = scene.getComponent<RigidBodyComponent>(chain[i - 1]);
-        auto* b = scene.getComponent<RigidBodyComponent>(chain[i]);
-        if (!a || !b || !a->internalBody || !b->internalBody) {
-            continue;
+using BlockMap = std::unordered_map<GridPos, EntityId, GridPosHash>;
+using CellMap = std::unordered_map<EntityId, GridPos>;
+
+struct GridRayHit {
+    bool hit = false;
+    GridPos cell{};
+    GridPos normal{};
+    float distance = 0.0f;
+};
+
+GridRayHit raycastBlocks(const Vec3& origin, const Vec3& direction, float maxDist, const BlockMap& blocks) {
+    GridRayHit out{};
+    if (maxDist <= 0.0f || blocks.empty()) return out;
+
+    const Vec3 dir = normalize(direction);
+    if (dot(dir, dir) <= 1e-8f) return out;
+
+    // Convert to voxel grid where each block center is at integer coordinates.
+    // Grid cell volume becomes [i-0.5, i+0.5), so shift ray by +0.5.
+    const Vec3 p0{origin.x + 0.5f, origin.y + 0.5f, origin.z + 0.5f};
+
+    GridPos cell{
+        static_cast<int>(std::floor(p0.x)),
+        static_cast<int>(std::floor(p0.y)),
+        static_cast<int>(std::floor(p0.z))
+    };
+
+    auto hasCell = [&](const GridPos& c) -> bool {
+        return blocks.find(c) != blocks.end();
+    };
+
+    if (hasCell(cell)) {
+        out.hit = true;
+        out.cell = cell;
+        out.normal = {-signi(dir.x), -signi(dir.y), -signi(dir.z)};
+        out.distance = 0.0f;
+        return out;
+    }
+
+    const float inf = std::numeric_limits<float>::infinity();
+
+    const int stepX = signi(dir.x);
+    const int stepY = signi(dir.y);
+    const int stepZ = signi(dir.z);
+
+    const float tDeltaX = (stepX == 0) ? inf : std::fabs(1.0f / dir.x);
+    const float tDeltaY = (stepY == 0) ? inf : std::fabs(1.0f / dir.y);
+    const float tDeltaZ = (stepZ == 0) ? inf : std::fabs(1.0f / dir.z);
+
+    float tMaxX = inf;
+    float tMaxY = inf;
+    float tMaxZ = inf;
+
+    if (stepX != 0) {
+        const float nextBoundary = float(cell.x + (stepX > 0 ? 1 : 0));
+        tMaxX = (nextBoundary - p0.x) / dir.x;
+    }
+    if (stepY != 0) {
+        const float nextBoundary = float(cell.y + (stepY > 0 ? 1 : 0));
+        tMaxY = (nextBoundary - p0.y) / dir.y;
+    }
+    if (stepZ != 0) {
+        const float nextBoundary = float(cell.z + (stepZ > 0 ? 1 : 0));
+        tMaxZ = (nextBoundary - p0.z) / dir.z;
+    }
+
+    float traveled = 0.0f;
+    GridPos enterNormal{0, 0, 0};
+
+    while (traveled <= maxDist) {
+        if (tMaxX < tMaxY) {
+            if (tMaxX < tMaxZ) {
+                cell.x += stepX;
+                traveled = tMaxX;
+                tMaxX += tDeltaX;
+                enterNormal = {-stepX, 0, 0};
+            } else {
+                cell.z += stepZ;
+                traveled = tMaxZ;
+                tMaxZ += tDeltaZ;
+                enterNormal = {0, 0, -stepZ};
+            }
+        } else {
+            if (tMaxY < tMaxZ) {
+                cell.y += stepY;
+                traveled = tMaxY;
+                tMaxY += tDeltaY;
+                enterNormal = {0, -stepY, 0};
+            } else {
+                cell.z += stepZ;
+                traveled = tMaxZ;
+                tMaxZ += tDeltaZ;
+                enterNormal = {0, 0, -stepZ};
+            }
         }
 
-        DistanceJointDesc j;
-        j.bodyA = a->internalBody;
-        j.bodyB = b->internalBody;
-        j.restLength = 1.45f;
-        j.stiffness = stiffness;
-        j.damping = damping;
-        const int id = physics.addDistanceJoint(j);
-        if (id >= 0) {
-            outJointIds.push_back(id);
+        if (traveled > maxDist) break;
+
+        if (hasCell(cell)) {
+            out.hit = true;
+            out.cell = cell;
+            out.normal = enterNormal;
+            out.distance = traveled;
+            return out;
         }
     }
+
+    return out;
+}
+
+bool spawnBlock(Scene& scene,
+                Mesh* cube,
+                const GridPos& cell,
+                BlockKind kind,
+                BlockMap& blocks,
+                CellMap& entityToCell) {
+    if (blocks.find(cell) != blocks.end()) return false;
+
+    const BlockVisual visual = getBlockVisual(kind);
+
+    const EntityId e = scene.createEntity();
+    Transform& t = scene.addComponent<Transform>(e, toWorldPos(cell));
+    t.scale = {1.0f, 1.0f, 1.0f};
+
+    scene.addComponent<MeshRenderer>(e, nullptr, cube, visual.color, visual.metallic, visual.roughness, visual.ao);
+
+    blocks.emplace(cell, e);
+    entityToCell.emplace(e, cell);
+    return true;
+}
+
+bool removeBlock(Scene& scene,
+                 EntityId e,
+                 BlockMap& blocks,
+                 CellMap& entityToCell) {
+    auto it = entityToCell.find(e);
+    if (it == entityToCell.end()) return false;
+
+    blocks.erase(it->second);
+    entityToCell.erase(it);
+    scene.destroyEntity(e);
+    return true;
+}
+
+EntityId spawnDynamicProp(Scene& scene,
+                          Mesh* cube,
+                          const Vec3& pos,
+                          const Vec3& vel,
+                          BlockKind kind) {
+    const BlockVisual visual = getBlockVisual(kind);
+
+    const EntityId e = scene.createEntity();
+    Transform& t = scene.addComponent<Transform>(e, pos);
+    t.scale = {1.0f, 1.0f, 1.0f};
+
+    scene.addComponent<MeshRenderer>(e, nullptr, cube, visual.color, visual.metallic, visual.roughness, visual.ao);
+
+    RigidBodyComponent& rb = scene.addComponent<RigidBodyComponent>(e, BodyType::Dynamic, 1.0f);
+    rb.velocity = vel;
+    rb.angularVelocity = {1.3f, 2.1f, 0.9f};
+    rb.enableCCD = true;
+    rb.restitution = 0.08f;
+    rb.staticFriction = 0.75f;
+    rb.dynamicFriction = 0.55f;
+    rb.linearDamping = 0.01f;
+    rb.angularDamping = 0.03f;
+
+    return e;
 }
 
 } // namespace
@@ -147,201 +285,105 @@ int main() {
     using namespace rex;
 
     Window window({
-        .title = "Rex Runtime Sandbox (Graphics + Rust Physics)",
+        .title = "Rex Block Sandbox (Deferred + Rust Physics)",
         .width = 1600,
         .height = 900,
         .vsync = true,
     });
 
     Renderer renderer;
-    auto& postSettings = renderer.deferredPipeline().postProcess().settings();
-    postSettings.enableBloom = true;
-    postSettings.autoExposure = true;
-    postSettings.exposure = 1.15f;
-    postSettings.bloomStrength = 0.14f;
+    auto& post = renderer.deferredPipeline().postProcess().settings();
+    post.enableBloom = false;
+    post.autoExposure = false;
+    post.exposure = 1.05f;
+    post.bloomStrength = 0.08f;
 
     PhysicsSystem physics;
-    physics.setSolverIterations(14, 6);
+    physics.setSolverIterations(12, 6);
     physics.setMaxSubSteps(8);
     physics.setGravity({0.0f, -9.81f, 0.0f});
 
-    Mesh* cube = Mesh::createCube();
     Scene scene;
+    Mesh* cube = Mesh::createCube();
 
     Camera camera;
-    camera.fov = 65.0f;
+    camera.fov = 70.0f;
     camera.aspect = float(window.getWidth()) / float(window.getHeight());
     camera.nearPlane = 0.05f;
-    camera.farPlane = 2000.0f;
+    camera.farPlane = 600.0f;
 
-    Vec3 camPos{0.0f, 4.0f, -16.0f};
+    Vec3 camPos{0.0f, 14.0f, -24.0f};
     float camYaw = 0.0f;
-    float camPitch = 10.0f;
+    float camPitch = -14.0f;
 
     bool running = true;
     bool paused = false;
     bool gravityEnabled = true;
     bool lookMode = false;
-
     float worldTime = 0.0f;
-    Vec3 kinematicLastPos{0, 0, 0};
 
-    std::vector<EntityId> dynamicBodies;
-    std::vector<EntityId> chainBodies;
-    std::vector<int> chainJointIds;
-    std::vector<EntityId> stressPointLights;
-    std::vector<Vec3> stressPointLightBase;
+    BlockKind selectedBlock = BlockKind::Grass;
 
-    bool stressLightsEnabled = true;
-    bool animateStressLights = true;
-    float stressLightIntensity = 2.5f;
+    BlockMap blocks;
+    CellMap entityToCell;
+    std::vector<EntityId> dynamicProps;
 
-    const EntityId sunLight = spawnLightEntity(
-        scene,
-        {0.0f, 40.0f, 0.0f},
-        {-48.0f, 38.0f, 0.0f},
-        {1.0f, 0.97f, 0.93f},
-        6.8f,
-        Light::Directional,
-        1500.0f,
-        true,
-        false);
+    const EntityId sun = scene.createEntity();
+    scene.addComponent<Transform>(sun, Vec3{0.0f, 80.0f, 0.0f}).rotation = {-54.0f, 22.0f, 0.0f};
+    Light& sunLight = scene.addComponent<Light>(sun, Vec3{1.0f, 0.97f, 0.93f}, 4.6f, Light::Directional);
+    sunLight.castShadows = true;
+    sunLight.volumetric = false;
 
-    const EntityId movingPointLight = spawnLightEntity(
-        scene,
-        {6.0f, 8.0f, -2.0f},
-        {0.0f, 0.0f, 0.0f},
-        {0.78f, 0.88f, 1.0f},
-        12.0f,
-        Light::Point,
-        35.0f,
-        false,
-        false,
-        20.0f,
-        35.0f,
-        0.05f,
-        0.02f);
+    const EntityId skyFill = scene.createEntity();
+    scene.addComponent<Transform>(skyFill, Vec3{0.0f, 40.0f, 0.0f}).rotation = {32.0f, -140.0f, 0.0f};
+    Light& fill = scene.addComponent<Light>(skyFill, Vec3{0.42f, 0.50f, 0.62f}, 0.8f, Light::Directional);
+    fill.castShadows = false;
 
-    const EntityId movingSpotLight = spawnLightEntity(
-        scene,
-        {-4.0f, 7.0f, 4.0f},
-        {-40.0f, 20.0f, 0.0f},
-        {1.0f, 0.82f, 0.60f},
-        18.0f,
-        Light::Spot,
-        42.0f,
-        false,
-        false,
-        18.0f,
-        34.0f,
-        0.06f,
-        0.016f);
+    const int worldHalf = 14;
+    int spawnedBlocks = 0;
 
-    for (int i = 0; i < 8; ++i) {
-        const float angle = (float(i) / 8.0f) * 6.28318530718f;
-        const Vec3 pos{std::sin(angle) * 16.0f, 5.5f, std::cos(angle) * 16.0f};
-        const Vec3 color{
-            0.45f + 0.45f * (0.5f + 0.5f * std::sin(angle + 0.3f)),
-            0.40f + 0.50f * (0.5f + 0.5f * std::sin(angle + 2.1f)),
-            0.55f + 0.35f * (0.5f + 0.5f * std::sin(angle + 4.2f))
-        };
-        spawnLightEntity(scene, pos, {-30.0f, angle * 57.2957795f, 0.0f}, color, 6.0f, Light::Area, 18.0f, false, false);
-    }
+    for (int x = -worldHalf; x <= worldHalf; ++x) {
+        for (int z = -worldHalf; z <= worldHalf; ++z) {
+            const int h = terrainHeight(x, z);
+            for (int y = 0; y <= h; ++y) {
+                BlockKind kind = BlockKind::Stone;
+                if (y == 0) {
+                    kind = BlockKind::Bedrock;
+                } else if (y == h) {
+                    kind = (h <= 3) ? BlockKind::Sand : BlockKind::Grass;
+                } else if (y >= h - 2) {
+                    kind = BlockKind::Dirt;
+                }
 
-    constexpr int stressGridX = 16;
-    constexpr int stressGridZ = 8;
-    for (int z = 0; z < stressGridZ; ++z) {
-        for (int x = 0; x < stressGridX; ++x) {
-            const float fx = -14.0f + float(x) * 1.85f;
-            const float fz = -14.0f + float(z) * 3.45f;
-            const Vec3 base{fx, 1.4f, fz};
-            const float phase = float(x + z * stressGridX) * 0.13f;
-            const Vec3 color{
-                0.35f + 0.65f * (0.5f + 0.5f * std::sin(phase + 0.8f)),
-                0.35f + 0.65f * (0.5f + 0.5f * std::sin(phase + 2.8f)),
-                0.35f + 0.65f * (0.5f + 0.5f * std::sin(phase + 4.6f))
-            };
-            const EntityId lightId = spawnLightEntity(
-                scene,
-                base,
-                {0.0f, 0.0f, 0.0f},
-                color,
-                stressLightIntensity,
-                Light::Point,
-                8.0f,
-                false,
-                false,
-                20.0f,
-                35.0f,
-                0.16f,
-                0.11f);
-            stressPointLights.push_back(lightId);
-            stressPointLightBase.push_back(base);
-        }
-    }
-
-    spawnCube(scene, cube, {0.0f, -2.0f, 0.0f}, {36.0f, 1.0f, 36.0f}, {0.45f, 0.45f, 0.48f}, BodyType::Static, 0.0f, {0,0,0}, {0,0,0}, false, 0.05f, 0.9f, 0.65f, 0.02f, 0.82f, 1.0f);
-    spawnCube(scene, cube, {0.0f, 6.0f, 18.0f}, {36.0f, 16.0f, 1.0f}, {0.25f, 0.28f, 0.34f}, BodyType::Static, 0.0f, {0,0,0}, {0,0,0}, false, 0.05f, 0.9f, 0.65f, 0.10f, 0.75f, 1.0f);
-    spawnCube(scene, cube, {-18.0f, 6.0f, 0.0f}, {1.0f, 16.0f, 36.0f}, {0.25f, 0.28f, 0.34f}, BodyType::Static, 0.0f, {0,0,0}, {0,0,0}, false, 0.05f, 0.9f, 0.65f, 0.10f, 0.75f, 1.0f);
-    spawnCube(scene, cube, {18.0f, 6.0f, 0.0f}, {1.0f, 16.0f, 36.0f}, {0.25f, 0.28f, 0.34f}, BodyType::Static, 0.0f, {0,0,0}, {0,0,0}, false, 0.05f, 0.9f, 0.65f, 0.10f, 0.75f, 1.0f);
-
-    const EntityId kinematicPlatform = spawnCube(
-        scene,
-        cube,
-        {0.0f, 2.0f, -4.0f},
-        {4.0f, 0.6f, 4.0f},
-        {0.25f, 0.65f, 0.9f},
-        BodyType::Kinematic,
-        0.0f,
-        {0,0,0},
-        {0,0,0},
-        false,
-        0.05f,
-        0.8f,
-        0.6f);
-
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            for (int k = 0; k < 3; ++k) {
-                const Vec3 pos{-3.0f + i * 1.35f, 0.4f + k * 1.2f, -8.0f + j * 1.35f};
-                const Vec3 color{0.65f + 0.08f * float(k), 0.35f + 0.05f * float(i), 0.30f + 0.06f * float(j)};
-                dynamicBodies.push_back(spawnCube(scene, cube, pos, {1.0f, 1.0f, 1.0f}, color, BodyType::Dynamic, 1.0f));
+                if (spawnBlock(scene, cube, {x, y, z}, kind, blocks, entityToCell)) {
+                    ++spawnedBlocks;
+                }
             }
         }
     }
 
-    for (int i = 0; i < 8; ++i) {
-        const Vec3 pos{-12.0f + float(i) * 1.5f, 9.5f, -12.0f};
-        chainBodies.push_back(spawnCube(
-            scene,
-            cube,
-            pos,
-            {0.9f, 0.9f, 0.9f},
-            {0.9f, 0.8f, 0.25f},
-            BodyType::Dynamic,
-            0.7f,
-            {0,0,0},
-            {0,0.7f,0}));
+    for (int i = 0; i < 14; ++i) {
+        const int x = -worldHalf + 2 + (i * 7) % (worldHalf * 2 - 3);
+        const int z = -worldHalf + 2 + (i * 11) % (worldHalf * 2 - 3);
+        const int baseH = terrainHeight(x, z);
+        const int towerH = 3 + (i % 4);
+        for (int y = baseH + 1; y <= baseH + towerH; ++y) {
+            if (spawnBlock(scene, cube, {x, y, z}, BlockKind::Stone, blocks, entityToCell)) {
+                ++spawnedBlocks;
+            }
+        }
     }
 
-    physics.update(scene, 0.0f);
-
-    connectChain(physics, scene, chainBodies, chainJointIds, 0.72f, 0.18f);
-
-    if (auto* t = scene.getComponent<Transform>(kinematicPlatform)) {
-        kinematicLastPos = t->position;
-    }
-
-    Logger::info("Runtime Sandbox Controls:");
+    Logger::info("Rex Block Sandbox ready. spawned blocks: {}", spawnedBlocks);
+    Logger::info("Controls:");
     Logger::info("WASD + QE: move camera, Shift: speed boost");
-    Logger::info("Right mouse hold: look around");
-    Logger::info("Left click: raycast + impulse at hit point");
-    Logger::info("Space: spawn projectile cube");
-    Logger::info("B: spawn drop cube, J: connect last 2 cubes with joint");
-    Logger::info("R: impulse burst, T: torque burst, G: toggle gravity, P: pause");
-    Logger::info("F1: bloom toggle, F2: auto exposure toggle, F3/F4: exposure -, +");
-    Logger::info("F5/F6: bloom strength -, +, L: stress lights on/off, K: stress animation toggle");
-    Logger::info("Delete: remove last spawned dynamic cube, Esc: quit");
+    Logger::info("RMB hold + mouse: free look");
+    Logger::info("LMB: break block, RMB click: place selected block");
+    Logger::info("1/2/3/4: select block (Grass/Dirt/Stone/Sand)");
+    Logger::info("F: throw dynamic block prop");
+    Logger::info("P: pause physics, G: toggle gravity");
+    Logger::info("F1/F2/F3/F4/F5/F6: post-process tuning");
+    Logger::info("Delete: remove last spawned prop, Esc: quit");
 
     uint64_t prevCounter = SDL_GetPerformanceCounter();
     const uint64_t perfFreq = SDL_GetPerformanceFrequency();
@@ -367,17 +409,45 @@ int main() {
                 lookMode = false;
                 SDL_SetRelativeMouseMode(SDL_FALSE);
             } else if (e.type == SDL_MOUSEMOTION && lookMode) {
-                constexpr float mouseSensitivity = 0.08f;
+                constexpr float mouseSensitivity = 0.085f;
                 camYaw += float(e.motion.xrel) * mouseSensitivity;
-                camPitch = clampf(camPitch - float(e.motion.yrel) * mouseSensitivity, -85.0f, 85.0f);
-            } else if (e.type == SDL_MOUSEBUTTONDOWN && e.button.button == SDL_BUTTON_LEFT) {
+                camPitch = clampf(camPitch - float(e.motion.yrel) * mouseSensitivity, -86.0f, 86.0f);
+            } else if (e.type == SDL_MOUSEBUTTONDOWN && (e.button.button == SDL_BUTTON_LEFT || e.button.button == SDL_BUTTON_RIGHT)) {
                 const Vec3 forward = forwardFromYawPitch(camYaw, camPitch);
-                const RaycastHit hit = physics.raycast(camPos, forward, 200.0f);
-                if (hit.hit && hit.body) {
-                    hit.body->applyImpulseAtPoint(forward * 32.0f, hit.point);
-                    Logger::info("Raycast hit at ({:.2f}, {:.2f}, {:.2f}), dist {:.2f}", hit.point.x, hit.point.y, hit.point.z, hit.distance);
-                } else {
-                    Logger::trace("Raycast miss");
+                const GridRayHit blockHit = raycastBlocks(camPos, forward, 14.0f, blocks);
+
+                if (e.button.button == SDL_BUTTON_LEFT) {
+                    if (blockHit.hit) {
+                        if (blockHit.cell.y <= 0) {
+                            Logger::trace("Bedrock block is protected");
+                        } else {
+                            auto it = blocks.find(blockHit.cell);
+                            if (it != blocks.end()) {
+                                removeBlock(scene, it->second, blocks, entityToCell);
+                            }
+                        }
+                    } else {
+                        const RaycastHit bodyHit = physics.raycast(camPos, forward, 14.0f);
+                        if (bodyHit.hit && bodyHit.body) {
+                            bodyHit.body->applyImpulse(forward * 10.0f);
+                        }
+                    }
+                } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                    if (!blockHit.hit) continue;
+
+                    const GridPos target{
+                        blockHit.cell.x + blockHit.normal.x,
+                        blockHit.cell.y + blockHit.normal.y,
+                        blockHit.cell.z + blockHit.normal.z
+                    };
+
+                    const bool inBounds =
+                        (target.x >= -worldHalf * 2 && target.x <= worldHalf * 2) &&
+                        (target.z >= -worldHalf * 2 && target.z <= worldHalf * 2) &&
+                        (target.y >= 1 && target.y <= 42);
+                    if (!inBounds) continue;
+
+                    spawnBlock(scene, cube, target, selectedBlock, blocks, entityToCell);
                 }
             } else if (e.type == SDL_KEYDOWN && !e.key.repeat) {
                 switch (e.key.keysym.sym) {
@@ -393,131 +463,65 @@ int main() {
                         physics.setGravity(gravityEnabled ? Vec3{0.0f, -9.81f, 0.0f} : Vec3{0.0f, 0.0f, 0.0f});
                         Logger::info("Gravity {}", gravityEnabled ? "enabled" : "disabled");
                         break;
-                    case SDLK_F1:
-                        postSettings.enableBloom = !postSettings.enableBloom;
-                        Logger::info("Bloom {}", postSettings.enableBloom ? "enabled" : "disabled");
+                    case SDLK_1:
+                        selectedBlock = BlockKind::Grass;
+                        Logger::info("Selected block: {}", getBlockName(selectedBlock));
                         break;
-                    case SDLK_F2:
-                        postSettings.autoExposure = !postSettings.autoExposure;
-                        Logger::info("Auto Exposure {}", postSettings.autoExposure ? "enabled" : "disabled");
+                    case SDLK_2:
+                        selectedBlock = BlockKind::Dirt;
+                        Logger::info("Selected block: {}", getBlockName(selectedBlock));
                         break;
-                    case SDLK_F3:
-                        postSettings.exposure = clampf(postSettings.exposure - 0.1f, 0.2f, 4.0f);
-                        Logger::info("Exposure {:.2f}", postSettings.exposure);
+                    case SDLK_3:
+                        selectedBlock = BlockKind::Stone;
+                        Logger::info("Selected block: {}", getBlockName(selectedBlock));
                         break;
-                    case SDLK_F4:
-                        postSettings.exposure = clampf(postSettings.exposure + 0.1f, 0.2f, 4.0f);
-                        Logger::info("Exposure {:.2f}", postSettings.exposure);
+                    case SDLK_4:
+                        selectedBlock = BlockKind::Sand;
+                        Logger::info("Selected block: {}", getBlockName(selectedBlock));
                         break;
-                    case SDLK_F5:
-                        postSettings.bloomStrength = clampf(postSettings.bloomStrength - 0.02f, 0.0f, 1.0f);
-                        Logger::info("Bloom Strength {:.2f}", postSettings.bloomStrength);
-                        break;
-                    case SDLK_F6:
-                        postSettings.bloomStrength = clampf(postSettings.bloomStrength + 0.02f, 0.0f, 1.0f);
-                        Logger::info("Bloom Strength {:.2f}", postSettings.bloomStrength);
-                        break;
-                    case SDLK_l:
-                        stressLightsEnabled = !stressLightsEnabled;
-                        for (EntityId id : stressPointLights) {
-                            auto* l = scene.getComponent<Light>(id);
-                            if (!l) continue;
-                            l->intensity = stressLightsEnabled ? stressLightIntensity : 0.0f;
-                        }
-                        Logger::info("Stress point lights {}", stressLightsEnabled ? "enabled" : "disabled");
-                        break;
-                    case SDLK_k:
-                        animateStressLights = !animateStressLights;
-                        Logger::info("Stress light animation {}", animateStressLights ? "enabled" : "disabled");
-                        break;
-                    case SDLK_SPACE: {
+                    case SDLK_f: {
                         const Vec3 forward = forwardFromYawPitch(camYaw, camPitch);
-                        const EntityId bullet = spawnCube(
+                        const EntityId prop = spawnDynamicProp(
                             scene,
                             cube,
-                            camPos + forward * 1.7f,
-                            {0.45f, 0.45f, 0.45f},
-                            {0.9f, 0.2f, 0.2f},
-                            BodyType::Dynamic,
-                            0.5f,
-                            forward * 28.0f,
-                            {0, 4.0f, 0},
-                            true,
-                            0.15f,
-                            0.4f,
-                            0.3f);
-                        dynamicBodies.push_back(bullet);
-                        break;
-                    }
-                    case SDLK_b: {
-                        const Vec3 forward = forwardFromYawPitch(camYaw, camPitch);
-                        const Vec3 right = rightFromForward(forward);
-                        const EntityId spawned = spawnCube(
-                            scene,
-                            cube,
-                            camPos + forward * 5.0f + right * 1.2f + Vec3{0, 3, 0},
-                            {1.0f, 1.0f, 1.0f},
-                            {0.2f, 0.7f, 0.4f},
-                            BodyType::Dynamic,
-                            1.0f,
-                            {0, 0, 0},
-                            {0.5f, 0.5f, 0},
-                            true,
-                            0.28f,
-                            0.7f,
-                            0.45f);
-                        dynamicBodies.push_back(spawned);
-                        break;
-                    }
-                    case SDLK_j: {
-                        if (dynamicBodies.size() >= 2) {
-                            auto* rbA = scene.getComponent<RigidBodyComponent>(dynamicBodies[dynamicBodies.size() - 2]);
-                            auto* rbB = scene.getComponent<RigidBodyComponent>(dynamicBodies.back());
-                            if (rbA && rbB && rbA->internalBody && rbB->internalBody) {
-                                DistanceJointDesc j;
-                                j.bodyA = rbA->internalBody;
-                                j.bodyB = rbB->internalBody;
-                                j.restLength = 1.8f;
-                                j.stiffness = 0.8f;
-                                j.damping = 0.2f;
-                                const int id = physics.addDistanceJoint(j);
-                                if (id >= 0) {
-                                    chainJointIds.push_back(id);
-                                    Logger::info("Added runtime joint {}", id);
-                                }
-                            }
-                        }
-                        break;
-                    }
-                    case SDLK_r: {
-                        for (EntityId id : dynamicBodies) {
-                            auto* rb = scene.getComponent<RigidBodyComponent>(id);
-                            if (rb && rb->internalBody) {
-                                rb->internalBody->applyImpulse({0.0f, 7.5f, 0.0f});
-                            }
-                        }
-                        Logger::info("Impulse burst applied to dynamic set");
-                        break;
-                    }
-                    case SDLK_t: {
-                        for (EntityId id : dynamicBodies) {
-                            auto* rb = scene.getComponent<RigidBodyComponent>(id);
-                            if (rb && rb->internalBody) {
-                                rb->internalBody->applyTorque({0.0f, 10.0f, 6.0f});
-                            }
-                        }
-                        Logger::info("Torque burst applied to dynamic set");
+                            camPos + forward * 1.7f + Vec3{0.0f, 0.5f, 0.0f},
+                            forward * 16.0f + Vec3{0.0f, 2.0f, 0.0f},
+                            selectedBlock);
+                        dynamicProps.push_back(prop);
                         break;
                     }
                     case SDLK_DELETE: {
-                        if (!dynamicBodies.empty()) {
-                            const EntityId id = dynamicBodies.back();
-                            dynamicBodies.pop_back();
+                        if (!dynamicProps.empty()) {
+                            const EntityId id = dynamicProps.back();
+                            dynamicProps.pop_back();
                             scene.destroyEntity(id);
-                            Logger::info("Destroyed entity {}", id);
                         }
                         break;
                     }
+                    case SDLK_F1:
+                        post.enableBloom = !post.enableBloom;
+                        Logger::info("Bloom {}", post.enableBloom ? "enabled" : "disabled");
+                        break;
+                    case SDLK_F2:
+                        post.autoExposure = !post.autoExposure;
+                        Logger::info("Auto Exposure {}", post.autoExposure ? "enabled" : "disabled");
+                        break;
+                    case SDLK_F3:
+                        post.exposure = clampf(post.exposure - 0.08f, 0.2f, 4.0f);
+                        Logger::info("Exposure {:.2f}", post.exposure);
+                        break;
+                    case SDLK_F4:
+                        post.exposure = clampf(post.exposure + 0.08f, 0.2f, 4.0f);
+                        Logger::info("Exposure {:.2f}", post.exposure);
+                        break;
+                    case SDLK_F5:
+                        post.bloomStrength = clampf(post.bloomStrength - 0.02f, 0.0f, 1.0f);
+                        Logger::info("Bloom Strength {:.2f}", post.bloomStrength);
+                        break;
+                    case SDLK_F6:
+                        post.bloomStrength = clampf(post.bloomStrength + 0.02f, 0.0f, 1.0f);
+                        Logger::info("Bloom Strength {:.2f}", post.bloomStrength);
+                        break;
                     default:
                         break;
                 }
@@ -529,7 +533,7 @@ int main() {
         const Vec3 right = rightFromForward(forward);
         const Vec3 up = upFromForwardRight(forward, right);
 
-        float moveSpeed = 9.0f;
+        float moveSpeed = 10.0f;
         if (keys[SDL_SCANCODE_LSHIFT] || keys[SDL_SCANCODE_RSHIFT]) {
             moveSpeed *= 2.0f;
         }
@@ -543,71 +547,24 @@ int main() {
 
         worldTime += dt;
 
-        if (auto* t = scene.getComponent<Transform>(sunLight)) {
-            t->rotation.x = -48.0f + std::sin(worldTime * 0.11f) * 4.0f;
-            t->rotation.y = 38.0f + std::sin(worldTime * 0.09f) * 18.0f;
+        if (auto* t = scene.getComponent<Transform>(sun)) {
+            t->rotation.x = -54.0f + std::sin(worldTime * 0.05f) * 6.0f;
+            t->rotation.y = 22.0f + std::cos(worldTime * 0.04f) * 14.0f;
         }
 
-        if (auto* t = scene.getComponent<Transform>(movingPointLight)) {
-            t->position = {
-                std::sin(worldTime * 0.7f) * 10.0f,
-                8.0f + std::sin(worldTime * 1.9f) * 1.8f,
-                -2.0f + std::cos(worldTime * 0.6f) * 8.0f
-            };
+        if (auto* t = scene.getComponent<Transform>(skyFill)) {
+            t->rotation.x = 32.0f + std::sin(worldTime * 0.07f) * 4.0f;
+            t->rotation.y = -140.0f + std::cos(worldTime * 0.03f) * 12.0f;
         }
 
-        if (auto* l = scene.getComponent<Light>(movingPointLight)) {
-            l->intensity = 11.5f + std::sin(worldTime * 3.2f) * 2.2f;
-        }
+        physics.update(scene, paused ? 0.0f : dt);
 
-        if (auto* t = scene.getComponent<Transform>(movingSpotLight)) {
-            t->position = {std::cos(worldTime * 0.55f) * 9.0f, 9.5f, std::sin(worldTime * 0.55f) * 9.0f};
-            t->rotation = {-42.0f, worldTime * 31.0f, 0.0f};
-        }
-
-        if (auto* l = scene.getComponent<Light>(movingSpotLight)) {
-            l->intensity = 16.0f + std::sin(worldTime * 2.5f) * 3.0f;
-        }
-
-        for (size_t i = 0; i < stressPointLights.size(); ++i) {
-            const EntityId id = stressPointLights[i];
-            auto* light = scene.getComponent<Light>(id);
-            auto* t = scene.getComponent<Transform>(id);
-            if (!light || !t) continue;
-
-            light->intensity = stressLightsEnabled ? stressLightIntensity : 0.0f;
-            if (animateStressLights) {
-                const Vec3 base = stressPointLightBase[i];
-                const float phase = float(i) * 0.27f;
-                t->position = {base.x, base.y + std::sin(worldTime * 1.5f + phase) * 0.45f, base.z};
-            } else {
-                t->position = stressPointLightBase[i];
-            }
-        }
-
-        if (auto* t = scene.getComponent<Transform>(kinematicPlatform)) {
-            auto* rb = scene.getComponent<RigidBodyComponent>(kinematicPlatform);
-            const Vec3 nextPos{std::sin(worldTime * 1.2f) * 6.0f, 2.0f + std::sin(worldTime * 2.1f) * 0.8f, -4.0f + std::cos(worldTime * 0.9f) * 3.5f};
-            if (rb && dt > 0.0f) {
-                rb->velocity = (nextPos - kinematicLastPos) * (1.0f / dt);
-                rb->angularVelocity = {0.0f, 0.35f, 0.0f};
-            }
-            t->position = nextPos;
-            t->rotation.y += 20.0f * dt;
-            kinematicLastPos = nextPos;
-        }
-
-        if (!paused) {
-            physics.update(scene, dt);
-        }
-
-        const Mat4 view = Mat4::lookAtLH(camPos, camPos + forward, {0, 1, 0});
+        const Mat4 view = Mat4::lookAtLH(camPos, camPos + forward, {0.0f, 1.0f, 0.0f});
         renderer.render(scene, camera, view, camPos, window.getWidth(), window.getHeight(), 0);
         window.swapBuffers();
     }
 
     SDL_SetRelativeMouseMode(SDL_FALSE);
-
     delete cube;
     return 0;
 }

@@ -16,6 +16,7 @@ public:
     void setUniform(const std::string& name, int value);
     void setUniform(const std::string& name, float value);
     void setUniform(const std::string& name, const Vec3& value);
+    void setUniform(const std::string& name, const Vec4& value);
     void setUniform(const std::string& name, const Mat4& value);
 
 private:

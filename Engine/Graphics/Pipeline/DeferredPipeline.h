@@ -127,7 +127,7 @@ private:
 
     uint32_t m_ssaoTexture = 0;
     uint32_t m_whiteTexture = 0;
-    bool m_enableSSAO = true;
+    bool m_enableSSAO = false;
 
     int m_width = 0;
     int m_height = 0;

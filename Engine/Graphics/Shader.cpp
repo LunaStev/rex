@@ -33,6 +33,7 @@ void Shader::unbind() const { glUseProgram(0); }
 void Shader::setUniform(const std::string& n, int v) { glUniform1i(glGetUniformLocation(m_id, n.c_str()), v); }
 void Shader::setUniform(const std::string& n, float v) { glUniform1f(glGetUniformLocation(m_id, n.c_str()), v); }
 void Shader::setUniform(const std::string& n, const Vec3& v) { glUniform3f(glGetUniformLocation(m_id, n.c_str()), v.x, v.y, v.z); }
+void Shader::setUniform(const std::string& n, const Vec4& v) { glUniform4f(glGetUniformLocation(m_id, n.c_str()), v.x, v.y, v.z, v.w); }
 void Shader::setUniform(const std::string& n, const Mat4& v) { glUniformMatrix4fv(glGetUniformLocation(m_id, n.c_str()), 1, GL_FALSE, v.m); }
 
 uint32_t Shader::compileShader(uint32_t type, const std::string& src) {

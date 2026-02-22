@@ -69,6 +69,9 @@ typedef void (APIENTRYP PFNGLDRAWBUFFERSPROC)(GLsizei n, const GLenum* bufs);
 #ifndef PFNGLUNIFORM1IPROC
 typedef void (APIENTRYP PFNGLUNIFORM1IPROC)(GLint location, GLint v0);
 #endif
+#ifndef PFNGLUNIFORM4FPROC
+typedef void (APIENTRYP PFNGLUNIFORM4FPROC)(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3);
+#endif
 #include <functional>
 #include <iostream>
 
@@ -86,6 +89,7 @@ namespace rex::gl::internal {
         X(PFNGLGETUNIFORMLOCATIONPROC, GetUniformLocation) \
         X(PFNGLUNIFORM1IPROC, Uniform1i) \
         X(PFNGLUNIFORM1FPROC, Uniform1f) \
+        X(PFNGLUNIFORM4FPROC, Uniform4f) \
         X(PFNGLUNIFORM3FPROC, Uniform3f) \
         X(PFNGLUNIFORM3FVPROC, Uniform3fv) \
         X(PFNGLUNIFORMMATRIX4FVPROC, UniformMatrix4fv) \
@@ -140,6 +144,7 @@ namespace rex::gl::internal {
 #define glGetUniformLocation ::rex::gl::internal::ptr_GetUniformLocation
 #define glUniform1i ::rex::gl::internal::ptr_Uniform1i
 #define glUniform1f ::rex::gl::internal::ptr_Uniform1f
+#define glUniform4f ::rex::gl::internal::ptr_Uniform4f
 #define glUniform3f ::rex::gl::internal::ptr_Uniform3f
 #define glUniform3fv ::rex::gl::internal::ptr_Uniform3fv
 #define glUniformMatrix4fv ::rex::gl::internal::ptr_UniformMatrix4fv

@@ -11,6 +11,7 @@
 #undef glGetUniformLocation
 #undef glUniform1i
 #undef glUniform1f
+#undef glUniform4f
 #undef glUniform3f
 #undef glUniform3fv
 #undef glUniformMatrix4fv

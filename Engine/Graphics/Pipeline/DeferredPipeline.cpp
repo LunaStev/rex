@@ -19,6 +19,9 @@ Vec3 normalizeSafe(const Vec3& v) {
     return {v.x * invLen, v.y * invLen, v.z * invLen};
 }
 
+constexpr int kMaxShaderLights = 16;
+constexpr int kShadowAtlasResolution = 1024;
+
 } // namespace
 
 void DeferredPipeline::ShadowPass::execute(RenderFrameContext& ctx) {
@@ -162,16 +165,11 @@ void DeferredPipeline::initShaders() {
         uniform int uUseSSAO;
 
         uniform int uLightCount;
-        uniform int uLightType[128];
-        uniform vec3 uLightPos[128];
-        uniform vec3 uLightDir[128];
-        uniform vec3 uLightColor[128];
-        uniform float uLightIntensity[128];
-        uniform float uLightRange[128];
-        uniform vec3 uLightAtten[128];
-        uniform float uSpotInnerCos[128];
-        uniform float uSpotOuterCos[128];
-        uniform int uLightCastShadow[128];
+        uniform vec4 uLightPosType[32];       // xyz: position, w: type
+        uniform vec4 uLightDirIntensity[32];  // xyz: direction, w: intensity
+        uniform vec4 uLightColorRange[32];    // rgb: color, w: range
+        uniform vec4 uLightAttenInner[32];    // xyz: attenuation(c,l,q), w: inner cos
+        uniform vec4 uLightOuterShadow[32];   // x: outer cos, y: cast shadow (0/1)
 
         uniform mat4 uCascadeMatrices[4];
         uniform vec3 uCascadeRectMin[4];
@@ -275,28 +273,39 @@ void DeferredPipeline::initShaders() {
             vec3 Lo = vec3(0.0);
 
             for (int i = 0; i < uLightCount; ++i) {
+                int lightType = int(uLightPosType[i].w + 0.5);
+                vec3 lightPos = uLightPosType[i].xyz;
+                vec3 lightDir = normalize(uLightDirIntensity[i].xyz);
+                float lightIntensity = uLightDirIntensity[i].w;
+                vec3 lightColor = uLightColorRange[i].rgb;
+                float lightRange = uLightColorRange[i].w;
+                vec3 lightAtten = uLightAttenInner[i].xyz;
+                float spotInnerCos = uLightAttenInner[i].w;
+                float spotOuterCos = uLightOuterShadow[i].x;
+                float lightCastShadow = uLightOuterShadow[i].y;
+
                 vec3 L = vec3(0.0);
                 float attenuation = 1.0;
 
-                if (uLightType[i] == 0) {
-                    L = normalize(-uLightDir[i]);
+                if (lightType == 0) {
+                    L = normalize(-lightDir);
                 } else {
-                    vec3 toLight = uLightPos[i] - worldPos;
+                    vec3 toLight = lightPos - worldPos;
                     float dist = max(length(toLight), 0.001);
                     L = toLight / dist;
 
-                    float c = uLightAtten[i].x;
-                    float l = uLightAtten[i].y;
-                    float q = uLightAtten[i].z;
+                    float c = lightAtten.x;
+                    float l = lightAtten.y;
+                    float q = lightAtten.z;
                     attenuation = 1.0 / max(c + l * dist + q * dist * dist, 0.0001);
 
-                    float rangeFade = clamp(1.0 - dist / max(uLightRange[i], 0.001), 0.0, 1.0);
+                    float rangeFade = clamp(1.0 - dist / max(lightRange, 0.001), 0.0, 1.0);
                     attenuation *= rangeFade * rangeFade;
 
-                    if (uLightType[i] == 2) {
-                        float cosTheta = dot(normalize(-uLightDir[i]), L);
-                        float inner = uSpotInnerCos[i];
-                        float outer = min(inner - 0.0001, uSpotOuterCos[i]);
+                    if (lightType == 2) {
+                        float cosTheta = dot(normalize(-lightDir), L);
+                        float inner = spotInnerCos;
+                        float outer = min(inner - 0.0001, spotOuterCos);
                         float spot = clamp((cosTheta - outer) / max(inner - outer, 0.0001), 0.0, 1.0);
                         attenuation *= spot;
                     }
@@ -317,10 +326,10 @@ void DeferredPipeline::initShaders() {
                 vec3 kS = F;
                 vec3 kD = (vec3(1.0) - kS) * (1.0 - metallic);
 
-                vec3 radiance = uLightColor[i] * uLightIntensity[i] * attenuation;
+                vec3 radiance = lightColor * lightIntensity * attenuation;
 
                 float shadow = 1.0;
-                if (uLightType[i] == 0 && uLightCastShadow[i] == 1) {
+                if (lightType == 0 && lightCastShadow > 0.5) {
                     shadow = sampleShadowAtlas(worldPos, N, L);
                 }
 
@@ -346,7 +355,7 @@ void DeferredPipeline::ensureResources(int width, int height) {
     if (m_width == width && m_height == height && m_gbuffer.isValid()) {
         m_lightingBuffer.ensure(width, height);
         m_ssaoPass.ensure(width, height);
-        m_shadowSystem.ensureResources(2048);
+        m_shadowSystem.ensureResources(kShadowAtlasResolution);
         return;
     }
 
@@ -389,7 +398,7 @@ void DeferredPipeline::ensureResources(int width, int height) {
 
     m_lightingBuffer.ensure(width, height);
     m_ssaoPass.ensure(width, height);
-    m_shadowSystem.ensureResources(2048);
+    m_shadowSystem.ensureResources(kShadowAtlasResolution);
 }
 
 Vec3 DeferredPipeline::cameraForward(const Mat4& viewMatrix) const {
@@ -402,7 +411,7 @@ void DeferredPipeline::render(RenderFrameContext& ctx) {
     ensureResources(ctx.targetWidth, ctx.targetHeight);
 
     m_lightManager.gatherFromScene(ctx.scene);
-    m_activeLights = m_lightCuller.cullForView(m_lightManager.lights(), ctx.viewPos, 128);
+    m_activeLights = m_lightCuller.cullForView(m_lightManager.lights(), ctx.viewPos, kMaxShaderLights);
 
     m_visible = m_frustumCuller.collectVisible(ctx.scene,
                                                ctx.viewPos,
@@ -471,7 +480,8 @@ void DeferredPipeline::bindLightUniforms(const std::vector<RuntimeLight>& lights
                                          float shadowAtlasResolution,
                                          const Vec3& viewPos) {
     m_lightingShader->setUniform("uViewPos", viewPos);
-    m_lightingShader->setUniform("uLightCount", static_cast<int>(lights.size()));
+    const int lightCount = std::min<int>(static_cast<int>(lights.size()), kMaxShaderLights);
+    m_lightingShader->setUniform("uLightCount", lightCount);
 
     for (int i = 0; i < ShadowSystem::kMaxCascades; ++i) {
         m_lightingShader->setUniform("uCascadeMatrices[" + std::to_string(i) + "]", cascadeMatrices[i]);
@@ -481,20 +491,20 @@ void DeferredPipeline::bindLightUniforms(const std::vector<RuntimeLight>& lights
     }
     m_lightingShader->setUniform("uShadowAtlasResolution", shadowAtlasResolution);
 
-    for (int i = 0; i < static_cast<int>(lights.size()); ++i) {
+    for (int i = 0; i < lightCount; ++i) {
         const auto& l = lights[static_cast<size_t>(i)];
         const int type = static_cast<int>(l.kind);
 
-        m_lightingShader->setUniform("uLightType[" + std::to_string(i) + "]", type);
-        m_lightingShader->setUniform("uLightPos[" + std::to_string(i) + "]", l.position);
-        m_lightingShader->setUniform("uLightDir[" + std::to_string(i) + "]", l.direction);
-        m_lightingShader->setUniform("uLightColor[" + std::to_string(i) + "]", l.color);
-        m_lightingShader->setUniform("uLightIntensity[" + std::to_string(i) + "]", l.intensity);
-        m_lightingShader->setUniform("uLightRange[" + std::to_string(i) + "]", l.range);
-        m_lightingShader->setUniform("uLightAtten[" + std::to_string(i) + "]", l.attenuation);
-        m_lightingShader->setUniform("uSpotInnerCos[" + std::to_string(i) + "]", l.innerConeCos);
-        m_lightingShader->setUniform("uSpotOuterCos[" + std::to_string(i) + "]", l.outerConeCos);
-        m_lightingShader->setUniform("uLightCastShadow[" + std::to_string(i) + "]", l.castShadows ? 1 : 0);
+        m_lightingShader->setUniform("uLightPosType[" + std::to_string(i) + "]",
+                                     Vec4{l.position.x, l.position.y, l.position.z, static_cast<float>(type)});
+        m_lightingShader->setUniform("uLightDirIntensity[" + std::to_string(i) + "]",
+                                     Vec4{l.direction.x, l.direction.y, l.direction.z, l.intensity});
+        m_lightingShader->setUniform("uLightColorRange[" + std::to_string(i) + "]",
+                                     Vec4{l.color.x, l.color.y, l.color.z, l.range});
+        m_lightingShader->setUniform("uLightAttenInner[" + std::to_string(i) + "]",
+                                     Vec4{l.attenuation.x, l.attenuation.y, l.attenuation.z, l.innerConeCos});
+        m_lightingShader->setUniform("uLightOuterShadow[" + std::to_string(i) + "]",
+                                     Vec4{l.outerConeCos, l.castShadows ? 1.0f : 0.0f, 0.0f, 0.0f});
     }
 }
 
