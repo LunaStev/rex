@@ -1,230 +1,62 @@
-# Entity Module
+# Entity/Component 운용 가이드
 
-`Entity` 모듈은 프레임워크 내에서 모든 게임 오브젝트의 기본 클래스다.
+Rex는 ECS 패턴을 사용하므로, 엔티티는 ID이고 로직은 시스템이 처리한다.
 
-위치, 속도, 크기, 색상, 생존 상태 등의 공통 속성을 포함하며,
-
-`update()`와 `render()`를 오버라이드하여 개별 엔티티의 행동과 시각적 표현을 정의할 수 있어.
-
----
-
-## 개요
-
-`Entity` 클래스는 게임 내 모든 물체(플레이어, 적, 탄환, 오브젝트 등)의 기반 클래스다.
-
-위치(`x`, `y`), 속도(`vx`, `vy`), 크기(`width`, `height`), 색상, 생존 상태 등의 속성을 갖고 있으며
-
-`update()`로 물리적 갱신을, `render()`로 시각적 표현을 수행한다.
-
----
-
-## 클래스 정의
-
+## 1. 기본 패턴
+### 1.1 엔티티 생성
 ```cpp
-#pragma once
-#include "../Graphics/Graphics.h"
-#include "../Input/Input.h"
-#include "../World/World.h"
-
-class Entity {
-protected:
-    float x, y;          // Location
-    float vx, vy;        // Speed
-    float width, height; // Size
-    bool alive;          // Active status
-    Uint8 r, g, b, a;    // Color (Temporary)
-
-public:
-    Entity(float x=0, float y=0, float w=40, float h=40)
-        : x(x), y(y), vx(0), vy(0), width(w), height(h),
-          alive(true), r(255), g(255), b(255), a(255) {}
-
-    virtual ~Entity() = default;
-
-    virtual void update(float dt, Input& input, World& world);
-    virtual void render(Graphics& g);
-
-    // Location
-    inline float getX() const;
-    inline float getY() const;
-    inline void setPosition(float nx, float ny);
-
-    // Velocity
-    inline float getVX() const;
-    inline float getVY() const;
-    inline void setVX(float nvx);
-    inline void setVY(float nvy);
-    inline void setVelocity(float nvx, float nvy);
-
-    // Size
-    inline float getWidth() const;
-    inline float getHeight() const;
-
-    // Color
-    inline void setColor(Uint8 nr, Uint8 ng, Uint8 nb, Uint8 na=255);
-
-    // Life state
-    inline bool isAlive() const;
-    inline void kill();
-};
+rex::EntityId e = scene.createEntity();
+scene.addComponent<rex::Transform>(e, rex::Vec3{0, 0, 0});
+scene.addComponent<rex::MeshRenderer>(e, nullptr, cube, rex::Vec3{1,1,1});
 ```
 
----
-
-## 멤버 설명
-
-### Entity(float x=0, float y=0, float w=40, float h=40)
-
-엔티티를 생성한다.
-
-위치, 크기, 속도, 색상, 생존 상태를 초기화한다.
-
-| 매개변수     | 설명          |
-| -------- | ----------- |
-| `x`, `y` | 초기 위치       |
-| `w`, `h` | 엔티티의 너비와 높이 |
-
----
-
-### void update(float dt, Input& input, World& world)
-
-엔티티의 상태를 갱신한다.
-
-기본 구현에서는 속도(`vx`, `vy`)를 기반으로 좌표(`x`, `y`)를 이동시킨다.
-
-| 매개변수    | 설명                 |
-| ------- | ------------------ |
-| `dt`    | 프레임 간 경과 시간 (초 단위) |
-| `input` | 입력 정보              |
-| `world` | 현재 엔티티가 속한 월드      |
-
-오버라이드 가능:
-
-플레이어나 NPC의 이동, 충돌, AI 등 논리를 이 메서드 안에 구현할 수 있다.
-
-기본 구현:
-
+### 1.2 엔티티 삭제
 ```cpp
-x += vx * dt;
-x += vy * dt;
+scene.destroyEntity(e);
 ```
 
----
+## 2. 실전 아키타입 예시
+### 2.1 동적 박스
+- `Transform`
+- `MeshRenderer`
+- `RigidBodyComponent`(Dynamic)
 
-### void render(Graphics& g)
+### 2.2 정적 바닥
+- `Transform` (큰 scale)
+- `MeshRenderer`
+- `RigidBodyComponent`(Static)
 
-엔티티를 렌더링한다.
+### 2.3 라이트
+- `Transform`
+- `Light`
 
-기본 구현에서는 단색 사각형(`drawRect`)으로 엔티티를 표시한다.
+## 3. 외부 개발자용 권장 흐름
+1. 엔티티 생성
+2. 컴포넌트 부착
+3. 시스템 루프 실행
+4. UI/에디터에서 선택/수정
 
-| 매개변수 | 설명                     |
-| ---- | ---------------------- |
-| `g`  | `Graphics` 객체 (렌더링 도구) |
+## 4. 내부 개발자용 확장 방법
+### 4.1 새 컴포넌트 추가
+1. `Engine/Core/Components.h`에 구조체 추가
+2. 시스템에서 `each<NewComponent>` 처리 추가
+3. 에디터 Inspector 노출(필요 시)
 
-기본 구현:
+### 4.2 새 시스템 추가
+- 입력: `Scene&`, `dt`
+- 출력: 컴포넌트 갱신
+- 규칙: 시스템끼리 강결합 최소화
 
-```cpp
-graphics.drawRect((int)x, (int)y, (int)width, (int)height, r, g, b, a);
-```
+## 5. 안전한 접근 규칙
+- `getComponent<T>` 반환 포인터는 null 가능
+- 삭제된 엔티티 캐시를 장시간 보관하지 말 것
 
----
+## 6. 흔한 실수
+- `RigidBodyComponent.internalBody`를 외부에서 직접 소유/삭제
+- 물리 동기화 이전에 Transform을 덮어써서 떨림 유발
+- 컴포넌트 없는 엔티티를 전제한 코드
 
-## 위치 관련 메서드
-
-| 메서드                                    | 설명         |
-| -------------------------------------- | ---------- |
-| `float getX() const`                   | 현재 X 좌표 반환 |
-| `float getY() const`                   | 현재 Y 좌표 반환 |
-| `void setPosition(float nx, float ny)` | 새 위치 설정    |
-
----
-
-## 속도 관련 메서드
-
-| 메서드                                      | 설명           |
-| ---------------------------------------- | ------------ |
-| `float getVX() const`                    | X축 속도 반환     |
-| `float getVY() const`                    | Y축 속도 반환     |
-| `void setVX(float nvx)`                  | X축 속도 설정     |
-| `void setVY(float nvy)`                  | Y축 속도 설정     |
-| `void setVelocity(float nvx, float nvy)` | 두 축 속도 동시 설정 |
-
----
-
-## 크기 관련 메서드
-
-| 메서드                       | 설명        |
-| ------------------------- | --------- |
-| `float getWidth() const`  | 엔티티 너비 반환 |
-| `float getHeight() const` | 엔티티 높이 반환 |
-
----
-
-## 색상 관련 메서드
-
-| 메서드                                                     | 설명        |
-| ------------------------------------------------------- | --------- |
-| `void setColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a=255)` | 엔티티 색상 설정 |
-
-예시:
-
-```cpp
-entity.setColor(255, 0, 0); // 빨간색
-```
-
----
-
-## 생존 상태 관련 메서드
-
-| 메서드                    | 설명              |
-| ---------------------- | --------------- |
-| `bool isAlive() const` | 엔티티가 활성 상태인지 확인 |
-| `void kill()`          | 엔티티를 비활성 상태로 전환 |
-
-
----
-
-## 예시 코드
-
-```cpp
-#include "Entity/Entity.h"
-
-class Player : public Entity {
-public:
-    void update(float dt, Input& input, World& world) override {
-        if (input.isKeyHeld(RexKey::A)) setVX(-100);
-        else if (input.isKeyHeld(RexKey::D)) setVX(100);
-        else setVX(0);
-
-        Entity::update(dt, input, world); // 기본 이동 처리
-    }
-
-    void render(Graphics& g) override {
-        setColor(0, 200, 255); // 하늘색
-        Entity::render(g);
-    }
-};
-```
-
----
-
-## 의존 관계
-
-| 의존 모듈      | 설명                  |
-| ---------- | ------------------- |
-| `Graphics` | 엔티티 시각화             |
-| `Input`    | 사용자 입력 처리           |
-| `World`    | 충돌, 맵 경계 등 월드 관련 정보 |
-
----
-
-## 요약 
-
-| 함수                         | 설명        |
-| -------------------------- | --------- |
-| `update(dt, input, world)` | 엔티티 상태 갱신 |
-| `render(graphics)`         | 엔티티 렌더링   |
-| `setPosition(x, y)`        | 위치 설정     |
-| `setVelocity(vx, vy)`      | 속도 설정     |
-| `setColor(r, g, b, a)`     | 색상 변경     |
-| `kill()`                   | 비활성화      |
+## 7. 디버깅 팁
+- 선택 엔티티 ID 출력
+- 컴포넌트 존재 여부 로그
+- 물리 동기화 전/후 Transform 비교

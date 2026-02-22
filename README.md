@@ -1,110 +1,111 @@
-<!-- # ![alt text](.github/REX_LOGO.png) -->
-# ![alt text](.github/REX_LOGO_WHITE.png)
+# ![Rex Logo](.github/REX_LOGO_WHITE.png)
 
-Rex Framework is a lightweight 2D game engine built on top of [SDL2 2.32.10](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.10).
+Rex is a lightweight C++20 game engine/editor codebase with an ECS core, OpenGL renderer, rigid-body physics, and an SDL + RexUI editor.
 
-Designed for simplicity and modularity, Rex provides an easy-to-use API for building games ranging from classic arcade titles to simulation and sandbox-style projects.
+This repository is intended for both:
+- external developers building runtime content/tools on top of Rex
+- internal contributors extending engine systems and architecture
 
----
+## Current Highlights
+- ECS-style scene model (`Scene` + component pools)
+- OpenGL rendering pipeline with mesh/model support and tonemapping
+- Rigid-body physics with:
+  - quaternion rotational dynamics
+  - Rust core + C++ bridge architecture
+  - broadphase candidate generation (bounding-sphere overlap)
+  - contact manifold caching/warmstart (2-4 points)
+  - TOI-based CCD (swept-sphere approximation)
+  - distance joint constraints
+- Editor migrated away from Qt to SDL + RexUI (`rex-editor`)
+- Next-generation industrial RexUI framework skeleton under `Engine/UI/RexUI/`
 
-## Game Project Tree
+## Requirements
+- C++20 compiler
+- CMake 3.20+
+- Rust toolchain (`rustc`, `cargo`)
+- SDL2
+- OpenGL development libraries
+- Freetype
 
-```
-mygame/
-├── main.lua
-└── assets/
-    ├── player.png
-    ├── jump.wav
-    └── fonts/
-        └── myfont.ttf
-```
-
----
-
-## Game Run 
-
+### Fedora-like setup
 ```bash
-cd mygame
-rex .
+sudo dnf install gcc-c++ cmake SDL2-devel freetype-devel mesa-libGL-devel
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
-
----
-
-## Example main.lua
-
-```lua
-rex.log("Hello Rex!")
-
-player = rex.entity.spawn_player(100, 100)
-
-function update(dt)
-    local vx = 0
-    if rex.input.held(rex.key.A) then vx = -200 end
-    if rex.input.held(rex.key.D) then vx =  200 end
-    rex.entity.set_velocity(player, vx, 0)
-end
-
-function draw()
-    rex.gfx.clear(20, 20, 30)
-    rex.entity.render_all()
-end
-```
-
----
 
 ## Build
-
-### Python Build
-
-1. Build
-
 ```bash
 python3 x.py
 ```
 
-2. Install
-
-```bash
-sudo python3 x.py install
-```
-
----
-
-### CMake Build
-
-1. Build
-
+Manual CMake flow (optional):
 ```bash
 cmake -S . -B build
-cmake --build build -j
+cmake --build build -j4
 ```
 
-2. Install
-
+## Run
 ```bash
-sudo cmake --install build
+./build/rex-editor
+./build/rex-runtime
 ```
 
----
+## Quick Runtime Flow
+Use `Engine/Runtime/runtime_main.cpp` as the baseline integration example.
 
-## Example Projects
+Typical frame flow:
+1. Create `Window`, `Scene`, `Renderer`, `PhysicsSystem`
+2. Create entities/components (`Transform`, `MeshRenderer`, `RigidBodyComponent`, etc.)
+3. Per frame:
+   - poll events
+   - `physics.update(scene, dt)`
+   - `renderer.render(scene, camera, view, viewPos, width, height, backbufferFBO)`
+   - swap buffers
 
-All sample projects can be found under the [`Examples/`](./Examples) directory:
+## Project Layout
+```text
+Engine/
+  Core/        # ECS, math, window/logger
+  Graphics/    # renderer, shader, mesh/model
+  Physics/     # rigid bodies, world solver, ECS bridge
+  UI/          # legacy RexUI + next-gen RexUI skeleton
+  EditorRex/   # editor entry point (SDL + RexUI)
+  Runtime/     # runtime sample entry point
+docs/
+  english/     # English developer docs
+  korean/      # Korean developer docs
+```
 
-- `entity.cpp` — Basic entity movement and rendering  
-- `physics.cpp` — Gravity and collision test  
-- `world.cpp` — Simple tile world rendering  
-- `audio.cpp` — Music and sound effect playback  
-- `text.cpp` — Text rendering demo
+## Documentation
+Start here:
+- `docs/english/overview.md`
+- `docs/english/core.md`
+- `docs/english/entity.md`
+- `docs/english/graphics.md`
+- `docs/english/physics.md`
+- `docs/english/input.md`
+- `docs/english/world.md`
+- `docs/english/roadmap.md`
 
----
+RexUI architecture and execution policy:
+- `docs/english/rexui_slate_grade_architecture.md`
+- `docs/english/rexui_framework_execution_lock.md`
+
+## Development Notes
+- Keep module boundaries explicit (Core -> Framework -> Runtime -> Renderer direction for next-gen UI)
+- Avoid direct model mutation from UI in next-gen RexUI path; use command/state flow
+- Keep docs synchronized with code changes in physics, rendering, and UI architecture
+
+## Known Scope and Limitations
+- The next-gen RexUI framework is currently a design-locked skeleton (interface/TODO phase), not feature-complete yet
+- Physics currently focuses on OBB-style rigid body flow and distance joints; broader shape/joint stacks are future work
+- Deterministic networking and multithreaded physics solving are not implemented yet
+
+## Contributing
+When submitting changes:
+1. keep build green (`python3 x.py`)
+2. update relevant docs under `docs/english/` (and `docs/korean/` when applicable)
+3. document architectural or contract-level changes clearly in PR notes
 
 ## License
-
-Rex Framework uses [SDL2 2.32.10](https://github.com/libsdl-org/SDL/releases/tag/release-2.32.10) as its underlying multimedia backend.
-
-Rex Framework licenses apply its own licenses derived from MIT licenses.
-
----
-
-*Rex Framework — Build your own 2D world.*
+See `LICENSE`.
