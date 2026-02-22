@@ -35,7 +35,7 @@ bool RexUIRendererRexGraphics::submit(const runtime::render::DrawList& drawList)
                 break;
             case runtime::render::DrawCommandType::Border:
                 out.op = RexGraphicsOp::DrawBorder;
-                out.thickness = cmd.rect.h;
+                out.thickness = cmd.thickness;
                 break;
             case runtime::render::DrawCommandType::Text:
                 out.op = RexGraphicsOp::DrawText;
@@ -64,4 +64,3 @@ bool RexUIRendererRexGraphics::endFrame() {
 }
 
 } // namespace rex::ui::renderer::rexgraphics
-

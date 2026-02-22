@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "IEditorPanel.h"
@@ -20,6 +21,7 @@ public:
 
 private:
     bool showAdvanced_ = false;
+    std::uint64_t dockPanelId_ = 0;
 };
 
 // TODO [Editor-Panels-003]:
@@ -40,4 +42,3 @@ private:
 //  - metadata 반영 테스트
 
 } // namespace rex::editor::panels
-

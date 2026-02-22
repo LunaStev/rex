@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,6 +14,10 @@
 #include "LayoutService.h"
 #include "SelectionManager.h"
 #include "TransactionSystem.h"
+
+namespace rex::editor::panels {
+class IEditorPanel;
+}
 
 namespace rex::editor::core {
 
@@ -31,8 +36,15 @@ public:
     TransactionSystem& transactions();
     ui::framework::docking::DockManager& dockManager();
     plugin::EditorModuleManager& moduleManager();
+    const std::vector<std::shared_ptr<panels::IEditorPanel>>& activePanels() const;
 
 private:
+    bool registerCorePanels();
+    bool attachCorePanels();
+    void detachPanels();
+    void syncStateFromManagers();
+    void publishBootstrapState();
+
     ui::app::RexUIEngine* uiEngine_ = nullptr;
     EditorSession session_{};
     EditorStateStore stateStore_{};
@@ -42,6 +54,7 @@ private:
     ui::framework::docking::DockManager dockManager_{};
     LayoutService layoutService_{};
     plugin::EditorModuleManager moduleManager_{};
+    std::vector<std::shared_ptr<panels::IEditorPanel>> activePanels_{};
 };
 
 // TODO [Editor-Core-009]:
@@ -63,4 +76,3 @@ private:
 //  - 세션 재시작 안정성 테스트
 
 } // namespace rex::editor::core
-

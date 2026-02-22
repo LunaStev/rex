@@ -12,6 +12,18 @@ PanelOrientation PanelWidget::orientation() const {
     return orientation_;
 }
 
+void PanelWidget::setBackgroundColor(const core::Color& color) {
+    background_ = color;
+}
+
+void PanelWidget::setBorderColor(const core::Color& color) {
+    border_ = color;
+}
+
+void PanelWidget::setBorderThickness(float thickness) {
+    borderThickness_ = std::max(0.0f, thickness);
+}
+
 void PanelWidget::arrange(const core::Rect& finalRect) {
     core::Widget::arrange(finalRect);
 
@@ -39,5 +51,14 @@ void PanelWidget::arrange(const core::Rect& finalRect) {
     }
 }
 
-} // namespace rex::ui::widgets::basic
+void PanelWidget::paint(core::PaintContext& ctx) const {
+    if (background_.a > 0.0f) {
+        ctx.drawRect(arrangedRect(), background_);
+    }
+    if (border_.a > 0.0f && borderThickness_ > 0.0f) {
+        ctx.drawBorder(arrangedRect(), border_, borderThickness_);
+    }
+    core::Widget::paint(ctx);
+}
 
+} // namespace rex::ui::widgets::basic

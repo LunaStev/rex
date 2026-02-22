@@ -24,6 +24,7 @@ struct DrawCommand {
     core::Color color{};
     std::string text;
     std::uint64_t textureId = 0;
+    float thickness = 0.0f;
 };
 
 using DrawList = std::vector<DrawCommand>;

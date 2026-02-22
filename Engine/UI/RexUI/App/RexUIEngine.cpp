@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "../../../Core/Logger.h"
+
 namespace rex::ui::app {
 
 RexUIEngine::RexUIEngine(renderer::IRenderBackend* backend)
@@ -57,6 +59,13 @@ bool RexUIEngine::runFrame(float dt, std::uint64_t frameIndex) {
     layoutEngine_.compute(widgetTree_, constraints, frameIndex);
 
     const auto drawList = drawBuilder_.build(widgetTree_);
+    if (frameIndex == 0) {
+        Logger::info("RexUI frame0 draw commands: {} (viewport {}x{})",
+                     drawList.size(),
+                     viewportWidth_,
+                     viewportHeight_);
+    }
+
     renderGraph_.beginFrame();
     renderGraph_.addDrawList(drawList);
 
@@ -73,4 +82,3 @@ bool RexUIEngine::runFrame(float dt, std::uint64_t frameIndex) {
 }
 
 } // namespace rex::ui::app
-

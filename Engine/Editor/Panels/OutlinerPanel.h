@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "IEditorPanel.h"
@@ -20,6 +21,7 @@ public:
 
 private:
     std::string searchFilter_;
+    std::uint64_t dockPanelId_ = 0;
 };
 
 // TODO [Editor-Panels-002]:
@@ -39,4 +41,3 @@ private:
 //  - 선택 동기화 테스트
 
 } // namespace rex::editor::panels
-

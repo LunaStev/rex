@@ -15,10 +15,18 @@ public:
     void setOrientation(PanelOrientation orientation);
     PanelOrientation orientation() const;
 
+    void setBackgroundColor(const core::Color& color);
+    void setBorderColor(const core::Color& color);
+    void setBorderThickness(float thickness);
+
     void arrange(const core::Rect& finalRect) override;
+    void paint(core::PaintContext& ctx) const override;
 
 private:
     PanelOrientation orientation_ = PanelOrientation::Vertical;
+    core::Color background_{0.0f, 0.0f, 0.0f, 0.0f};
+    core::Color border_{0.0f, 0.0f, 0.0f, 0.0f};
+    float borderThickness_ = 0.0f;
 };
 
 // TODO [RexUI-Widgets-Basic-001]:

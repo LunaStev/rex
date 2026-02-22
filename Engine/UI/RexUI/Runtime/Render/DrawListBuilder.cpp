@@ -15,7 +15,7 @@ public:
 
     void drawRect(const core::Rect& rect, const core::Color& color) override {
         if (!drawList_) return;
-        drawList_->push_back({DrawCommandType::Rect, rect, color, "", 0});
+        drawList_->push_back({DrawCommandType::Rect, rect, color, "", 0, 0.0f});
     }
 
     void drawBorder(const core::Rect& rect, const core::Color& color, float thickness) override {
@@ -23,8 +23,8 @@ public:
         DrawCommand cmd;
         cmd.type = DrawCommandType::Border;
         cmd.rect = rect;
-        cmd.rect.h = thickness;
         cmd.color = color;
+        cmd.thickness = thickness;
         drawList_->push_back(std::move(cmd));
     }
 
@@ -50,12 +50,12 @@ public:
 
     void pushClip(const core::Rect& clipRect) override {
         if (!drawList_) return;
-        drawList_->push_back({DrawCommandType::ClipPush, clipRect, {}, "", 0});
+        drawList_->push_back({DrawCommandType::ClipPush, clipRect, {}, "", 0, 0.0f});
     }
 
     void popClip() override {
         if (!drawList_) return;
-        drawList_->push_back({DrawCommandType::ClipPop, {}, {}, "", 0});
+        drawList_->push_back({DrawCommandType::ClipPop, {}, {}, "", 0, 0.0f});
     }
 
 private:

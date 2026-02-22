@@ -1,5 +1,10 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
+#include "../../../../Graphics/Shader.h"
+#include "../../../RexUIFont.h"
 #include "../IRenderBackend.h"
 #include "../IRenderDevice.h"
 
@@ -8,13 +13,35 @@ namespace rex::ui::renderer::opengl {
 class RexUIRendererGL final : public IRenderBackend {
 public:
     explicit RexUIRendererGL(IRenderDevice* device);
+    ~RexUIRendererGL() override;
 
     bool beginFrame(const RenderFrameContext& context) override;
     bool submit(const runtime::render::DrawList& drawList) override;
     bool endFrame() override;
 
 private:
+    bool ensureInitialized();
+    void destroyGpuResources();
+    void submitRect(const core::Rect& rect, const core::Color& color);
+    void submitBorder(const core::Rect& rect, const core::Color& color, float thickness);
+    void submitText(const core::Rect& rect, const std::string& text, const core::Color& color);
+    void applyClipState();
+    core::Rect intersectClips(const core::Rect& a, const core::Rect& b) const;
+
     IRenderDevice* device_ = nullptr;
+    bool initialized_ = false;
+    RenderFrameContext frame_{};
+
+    std::unique_ptr<::rex::Shader> rectShader_{};
+    std::unique_ptr<::rex::Shader> textShader_{};
+    std::uint32_t rectVao_ = 0;
+    std::uint32_t rectVbo_ = 0;
+    std::uint32_t textVao_ = 0;
+    std::uint32_t textVbo_ = 0;
+
+    ::rex::ui::RexUIFont font_{};
+    bool fontReady_ = false;
+    std::vector<core::Rect> clipStack_{};
 };
 
 // TODO [RexUI-Renderer-OpenGL-001]:

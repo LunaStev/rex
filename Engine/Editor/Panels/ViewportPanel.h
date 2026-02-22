@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "IEditorPanel.h"
 
 namespace rex::editor::gizmo {
@@ -24,6 +26,7 @@ private:
     bool debugOverlay_ = true;
     bool showSelectionOutline_ = true;
     bool showPostProcess_ = true;
+    std::uint64_t dockPanelId_ = 0;
 };
 
 // TODO [Editor-Panels-001]:
@@ -44,4 +47,3 @@ private:
 //  - 렌더 모드 전환 테스트
 
 } // namespace rex::editor::panels
-

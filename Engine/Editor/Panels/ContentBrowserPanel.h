@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #include "IEditorPanel.h"
@@ -21,6 +22,7 @@ public:
 private:
     std::string pathFilter_;
     std::string tagFilter_;
+    std::uint64_t dockPanelId_ = 0;
 };
 
 // TODO [Editor-Panels-004]:
@@ -41,4 +43,3 @@ private:
 //  - drag&drop 동작 테스트
 
 } // namespace rex::editor::panels
-
